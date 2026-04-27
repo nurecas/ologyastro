@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePersonal } from '../store.js';
 import { downloadNatalChart } from '../lib/downloadChart.js';
+import { downloadAstroMap } from '../lib/downloadAstroMap.js';
 import { exportWesternForLLM, exportWesternRaw } from '../lib/llmExport.js';
 import SystemNav from '../../shared/shell/SystemNav.jsx';
 import DownloadMenu from '../../shared/shell/DownloadMenu.jsx';
@@ -42,6 +43,15 @@ export default function ModeNav() {
       label: 'PNG · chart image',
       sub: '1400 × 1800 px — ready to share, print or paste alongside the JSON',
       onClick: onDownloadPNG,
+    },
+    {
+      id: 'astromap',
+      label: 'PNG · astrocartography map',
+      sub: '2400 × 1200 — your planet lines on a flat world map',
+      onClick: () => {
+        try { downloadAstroMap(natal); }
+        catch (e) { console.error('Astro map download failed:', e); }
+      },
     },
     {
       id: 'llm',
