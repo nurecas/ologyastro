@@ -1,15 +1,21 @@
 // Western — Astrocartography map PNG export.
 //
-// Renders a 2400×1200 equirectangular world map with the natal chart's 10
-// planet lines (MC / IC / ASC / DSC each) overlaid in the planet's colour.
-// Uses the existing public/earth_topo.jpg as the base texture (the same
-// asset the Globe view uses), so no new bundle weight.
+// 2400 × 1400 canvas with a 2400 × 1200 equirectangular map band
+// (perfect 2:1 ratio — required for an undistorted equirectangular).
 //
-// Equirectangular projection: x = (lon + 180) / 360 * W, y = (90 - lat) / 180 * H
-// — the simplest map projection and the one ACG software has used for
-// decades. Latitudes near the poles look stretched horizontally; that's
-// fine for astrocartography because the lines that matter run mostly
-// vertically (MC/IC) or diagonally (ASC/DSC) through inhabited latitudes.
+//   y =  130           ← bottom of header
+//   y = 1330           ← top of legend (map band fills 130 → 1330)
+//   y = 1400           ← canvas bottom
+//
+// Each of the 10 natal planets contributes 4 lines (MC / IC / ASC / DSC).
+// Each of the 45 planet PAIRS contributes a midpoint with the same 4
+// lines, drawn faintly in a blended colour so they don't drown out the
+// primary lines.
+//
+// Coordinate frame: equatorial (RA, dec). Each (lon, lat) on Earth is
+// where a given planet/midpoint sits at one of the four classical
+// astrocartography loci. We use the same `astrocartographyLines` helper
+// the Globe view uses, so map and globe stay in lock-step.
 
 import {
   dateToJD, gmst, equatorialAtDate, PLANETS,
@@ -18,24 +24,24 @@ import {
   astrocartographyLines, splitOnSeam,
 } from '../../astro/astrocartography.js';
 
-const RAD = 180 / Math.PI;
+const PI = Math.PI;
+const TWO_PI = 2 * PI;
+const RAD = 180 / PI;
 
 function pad(n) { return String(n).padStart(2, '0'); }
 function slug(s) { return (s || 'chart').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase(); }
 
-// Planet colour palette — each planet's MC line gets its own colour so a
-// reader can scan the map and see which line is which without legends. We
-// pick saturated, distinct hues that read clearly over the dark Earth
-// texture.
+// Per-planet colour palette. Picked for max contrast against a dim
+// equirectangular Earth background.
 const PLANET_COLOR = {
   Sun:     '#f5d680',
-  Moon:    '#c8c8dd',
+  Moon:    '#dfdfee',
   Mercury: '#9adfa8',
   Venus:   '#f7c7c7',
   Mars:    '#ff6a6a',
   Jupiter: '#e8a35c',
-  Saturn:  '#7a4f24',
-  Uranus:  '#5b7fc7',
+  Saturn:  '#b88c5e',
+  Uranus:  '#7fb0e8',
   Neptune: '#5fa672',
   Pluto:   '#b79aff',
 };
@@ -45,54 +51,63 @@ const PLANET_GLYPH = {
   Jupiter: '♃', Saturn: '♄', Uranus: '♅', Neptune: '♆', Pluto: '♇',
 };
 
-// Project a [lon, lat] pair (radians) to canvas (x, y).
-function project(lonRad, latRad, W, H) {
-  const lon = lonRad * RAD;
-  const lat = latRad * RAD;
-  return [
-    ((lon + 180) / 360) * W,
-    ((90 - lat) / 180) * H,
-  ];
+// Midpoint colour = average of the two source planets' RGBs. Lets the
+// reader trace a midpoint line back to its parents at a glance.
+function avgHex(a, b) {
+  const ar = parseInt(a.slice(1, 3), 16), ag = parseInt(a.slice(3, 5), 16), ab = parseInt(a.slice(5, 7), 16);
+  const br = parseInt(b.slice(1, 3), 16), bg = parseInt(b.slice(3, 5), 16), bb = parseInt(b.slice(5, 7), 16);
+  const r = Math.round((ar + br) / 2), g = Math.round((ag + bg) / 2), bl = Math.round((ab + bb) / 2);
+  return '#' + r.toString(16).padStart(2, '0') + g.toString(16).padStart(2, '0') + bl.toString(16).padStart(2, '0');
 }
 
-// Draw a polyline in pixel space, splitting on the ±180° seam so segments
-// don't span the whole map.
-function drawPolyline(ctx, points, W, H) {
-  // Split on seam first (in lon-lat space), then project + stroke.
-  const segments = splitOnSeam(points);
-  for (const seg of segments) {
-    if (seg.length < 2) continue;
-    ctx.beginPath();
-    seg.forEach(([lon, lat], i) => {
-      const [x, y] = project(lon, lat, W, H);
-      if (i === 0) ctx.moveTo(x, y);
-      else         ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  }
+// Shorter-arc midpoint of two angles (radians). Same logic as
+// midpoints.js's `circularMidpoint`, just in radians.
+function circularMidpointRad(a, b) {
+  const diff = ((b - a + 3 * PI) % TWO_PI) - PI;
+  return a + diff / 2;
 }
 
-// Load an Image from the deploy's base path. The Globe component already
-// fetches earth_topo.jpg this way; we reuse it.
+// Midpoint of two equatorial points: shorter-arc RA midpoint + simple
+// dec average. This matches the convention used by Astro-Cartography
+// midpoint-tree software (e.g., Astrolabe, Treasure Maps).
+function midpointEquatorial(ra1, dec1, ra2, dec2) {
+  return {
+    ra:  circularMidpointRad(ra1, ra2),
+    dec: (dec1 + dec2) / 2,
+  };
+}
+
+// Wrap to (-π, π].
+function normLon(lon) {
+  let x = ((lon + PI) % TWO_PI + TWO_PI) % TWO_PI - PI;
+  return x;
+}
+
 function loadEarthTexture() {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error('Earth texture failed to load'));
-    // Cloudflare/Pages serves /earth_topo.jpg from the dist root.
     const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
     img.src = base + 'earth_topo.jpg';
   });
 }
 
-// MAIN — given the natal chart object, render and trigger PNG download.
+// ---------------------------------------------------------------------------
+// MAIN
+// ---------------------------------------------------------------------------
 export async function downloadAstroMap(natal) {
   if (!natal) return;
-  const W = 2400, H = 1200;
-  const MAP_TOP = 140;            // header height
-  const MAP_HEIGHT = 1000;        // 2:1 equirectangular plus header + legend
-  const MAP_BOTTOM = MAP_TOP + MAP_HEIGHT;
+  // Geometry — exact 2:1 ratio for the map band.
+  const W = 2400;
+  const MAP_W = 2400;
+  const MAP_H = 1200;
+  const HEADER_H = 130;
+  const LEGEND_H = 70;
+  const H = HEADER_H + MAP_H + LEGEND_H;
+  const MAP_TOP = HEADER_H;
+  const MAP_BOTTOM = MAP_TOP + MAP_H;
 
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
@@ -102,101 +117,98 @@ export async function downloadAstroMap(natal) {
   ctx.fillStyle = '#0b0b15';
   ctx.fillRect(0, 0, W, H);
 
-  // Header.
+  // ---- Header ----
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#9b9bbd';
   ctx.font = '12px Inter, sans-serif';
-  ctx.fillText('O L O G Y · A S T R O C A R T O G R A P H Y', W / 2, 36);
+  ctx.fillText('O L O G Y · A S T R O C A R T O G R A P H Y', W / 2, 32);
   ctx.fillStyle = '#f5d680';
   ctx.font = 'bold 36px "Cormorant Garamond", serif';
-  ctx.fillText(natal.birth.name || 'Untitled', W / 2, 80);
+  ctx.fillText(natal.birth.name || 'Untitled', W / 2, 76);
   ctx.fillStyle = '#c8c8dd';
   ctx.font = '14px Inter, sans-serif';
   const dateStr = `${natal.birth.day}/${natal.birth.month}/${natal.birth.year}  ·  ${pad(natal.birth.hour)}:${pad(natal.birth.minute)}  ·  ${natal.birth.placeName}`;
-  ctx.fillText(dateStr, W / 2, 108);
+  ctx.fillText(dateStr, W / 2, 104);
 
-  // Try to load + draw the Earth texture as the map background. If it
-  // fails (network, CORS, deploy without the asset), fall back to a
-  // dark-blue ocean fill + 30° graticule so the map is still readable.
+  // ---- Map band ----
+
+  // Equirectangular projection that lands inside the map band.
+  const projectMap = (lonRad, latRad) => {
+    const lon = lonRad * RAD;
+    const lat = latRad * RAD;
+    return [
+      ((lon + 180) / 360) * MAP_W,
+      ((90 - lat) / 180) * MAP_H + MAP_TOP,
+    ];
+  };
+
+  // Try the Earth texture first. Fall back to a dark ocean fill if the
+  // image can't be loaded (offline before SW caches it, etc.).
   let bgDrawn = false;
   try {
     const img = await loadEarthTexture();
-    // The image is equirectangular; we paint it slightly dimmed so the
-    // bright planet lines pop on top.
     ctx.globalAlpha = 0.55;
-    ctx.drawImage(img, 0, MAP_TOP, W, MAP_HEIGHT);
+    ctx.drawImage(img, 0, MAP_TOP, MAP_W, MAP_H);
     ctx.globalAlpha = 1;
     bgDrawn = true;
   } catch (e) {
-    // Fallback ocean colour.
     ctx.fillStyle = '#0e1a2c';
-    ctx.fillRect(0, MAP_TOP, W, MAP_HEIGHT);
+    ctx.fillRect(0, MAP_TOP, MAP_W, MAP_H);
   }
 
-  // Graticule — 30° lon, 15° lat. Always draw on top of the texture for
-  // location reference.
-  ctx.strokeStyle = bgDrawn ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)';
+  // Graticule — 30° lon × 15° lat.
+  ctx.strokeStyle = bgDrawn ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.12)';
   ctx.lineWidth = 0.6;
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = '11px Inter, sans-serif';
   for (let lon = -180; lon <= 180; lon += 30) {
-    const x = ((lon + 180) / 360) * W;
+    const [x] = projectMap(lon / RAD, 0);
     ctx.beginPath();
-    ctx.moveTo(x, MAP_TOP);
-    ctx.lineTo(x, MAP_BOTTOM);
+    ctx.moveTo(x, MAP_TOP); ctx.lineTo(x, MAP_BOTTOM);
     ctx.stroke();
-    if (lon !== -180 && lon !== 180) {
-      ctx.textAlign = 'center';
-      ctx.fillText(`${lon}°`, x, MAP_BOTTOM + 14);
-    }
   }
   for (let lat = -75; lat <= 75; lat += 15) {
-    const y = ((90 - lat) / 180) * MAP_HEIGHT + MAP_TOP;
+    const [, y] = projectMap(0, lat / RAD);
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(W, y);
+    ctx.moveTo(0, y); ctx.lineTo(MAP_W, y);
     ctx.stroke();
     ctx.textAlign = 'left';
-    ctx.fillText(`${lat}°`, 6, y - 3);
+    ctx.fillText(`${lat >= 0 ? '+' : ''}${lat}°`, 6, y - 3);
   }
   // Equator slightly heavier.
   ctx.strokeStyle = 'rgba(245,214,128,0.35)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, MAP_TOP + MAP_HEIGHT / 2);
-  ctx.lineTo(W, MAP_TOP + MAP_HEIGHT / 2);
+  const [, equY] = projectMap(0, 0);
+  ctx.moveTo(0, equY); ctx.lineTo(MAP_W, equY);
   ctx.stroke();
+  // Lon labels along the equator.
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.textAlign = 'center';
+  for (let lon = -180; lon <= 180; lon += 30) {
+    if (lon === -180 || lon === 180) continue;
+    const [x] = projectMap(lon / RAD, 0);
+    ctx.fillText(`${lon}°`, x, equY - 4);
+  }
 
-  // Compute lines. Same code path as the Globe view — guarantees consistency.
+  // Compute lines. Same code path as the Globe — guarantees consistency.
   const G = gmst(natal.jd);
   const eqs = equatorialAtDate(natal.utc);
 
-  // Helper that confines drawing to the map band (clip rect).
+  // Clip to map band so lines + labels can't bleed into the legend.
   ctx.save();
   ctx.beginPath();
-  ctx.rect(0, MAP_TOP, W, MAP_HEIGHT);
+  ctx.rect(0, MAP_TOP, MAP_W, MAP_H);
   ctx.clip();
 
-  // Translate the projection to land on the map band, not the canvas top.
-  // We do this by post-transforming after `project()` returns y in [0, H_map].
-  // Easier: project to a temporary canvas-sized space, then add MAP_TOP.
-  const projectMap = (lonRad, latRad) => {
-    const lon = lonRad * RAD;
-    const lat = latRad * RAD;
-    return [
-      ((lon + 180) / 360) * W,
-      ((90 - lat) / 180) * MAP_HEIGHT + MAP_TOP,
-    ];
-  };
-
-  function strokePolyline(points, mapTransform = projectMap) {
+  function strokePolyline(points) {
     const segments = splitOnSeam(points);
     for (const seg of segments) {
       if (seg.length < 2) continue;
       ctx.beginPath();
       seg.forEach(([lon, lat], i) => {
-        const [x, y] = mapTransform(lon, lat);
+        const [x, y] = projectMap(lon, lat);
         if (i === 0) ctx.moveTo(x, y);
         else         ctx.lineTo(x, y);
       });
@@ -204,85 +216,135 @@ export async function downloadAstroMap(natal) {
     }
   }
 
-  // Draw lines: per planet, four loci. MC and IC are solid (vertical
-  // meridians); ASC and DSC are dashed (horizontal-ish curves) so they
-  // can be told apart at a glance. Line widths are chunky — these are
-  // the chart's headline data.
+  // Pre-compute every line set once (used for both drawing AND labels).
+  const planetLines = eqs.map((e, i) => ({
+    name: PLANETS[i],
+    colour: PLANET_COLOR[PLANETS[i]],
+    ra: e.ra,
+    dec: e.dec,
+    lines: astrocartographyLines(e.ra, e.dec, G),
+  }));
+
+  // ----- Midpoint lines (drawn FIRST so primary planet lines paint on top) -----
+  // 45 pairs × 4 lines = 180 lines. Drawn very thin and faint to avoid
+  // overwhelming the chart; colour is the average of the pair's two
+  // planet colours so the visual link is preserved.
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = 0.9;
   for (let i = 0; i < eqs.length; i++) {
-    const planet = PLANETS[i];
-    const colour = PLANET_COLOR[planet];
-    const lines = astrocartographyLines(eqs[i].ra, eqs[i].dec, G);
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = 2.2;
+    for (let j = i + 1; j < eqs.length; j++) {
+      const mp = midpointEquatorial(eqs[i].ra, eqs[i].dec, eqs[j].ra, eqs[j].dec);
+      const lines = astrocartographyLines(mp.ra, mp.dec, G);
+      ctx.strokeStyle = avgHex(PLANET_COLOR[PLANETS[i]], PLANET_COLOR[PLANETS[j]]);
+      ctx.setLineDash([]);
+      strokePolyline(lines.mc);
+      strokePolyline(lines.ic);
+      ctx.setLineDash([5, 4]);
+      strokePolyline(lines.asc);
+      strokePolyline(lines.dsc);
+    }
+  }
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+
+  // ----- Primary planet lines -----
+  ctx.lineWidth = 2.4;
+  for (const p of planetLines) {
+    ctx.strokeStyle = p.colour;
     ctx.setLineDash([]);
-    strokePolyline(lines.mc);
-    strokePolyline(lines.ic);
-    ctx.setLineDash([8, 6]);
-    strokePolyline(lines.asc);
-    strokePolyline(lines.dsc);
+    strokePolyline(p.lines.mc);
+    strokePolyline(p.lines.ic);
+    ctx.setLineDash([10, 7]);
+    strokePolyline(p.lines.asc);
+    strokePolyline(p.lines.dsc);
   }
   ctx.setLineDash([]);
 
-  // Label each MC line with the planet glyph at the top of the map.
-  for (let i = 0; i < eqs.length; i++) {
-    const planet = PLANETS[i];
-    const colour = PLANET_COLOR[planet];
-    const mcLonRad = ((eqs[i].ra - G) + Math.PI * 3) % (2 * Math.PI) - Math.PI;
-    const [x, y] = projectMap(mcLonRad, 80 / RAD);   // 80°N
-    ctx.fillStyle = colour;
+  // ----- MC / IC labels with planet glyphs -----
+  // Each MC line is a meridian (vertical line) at lon = ra - GMST. Label
+  // the planet glyph at TOP of map (78°N) for MC and BOTTOM (-78°S) for
+  // IC, with a small filled disc behind the glyph for legibility.
+  ctx.font = 'bold 22px "Cormorant Garamond", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const p of planetLines) {
+    const mcLon = normLon(p.ra - G);
+    const icLon = normLon(p.ra - G + PI);
+    const [mx, my] = projectMap(mcLon, 78 / RAD);
+    const [ix, iy] = projectMap(icLon, -78 / RAD);
+    // MC label
+    ctx.fillStyle = '#0b0b15';
+    ctx.beginPath(); ctx.arc(mx, my, 18, 0, TWO_PI); ctx.fill();
+    ctx.strokeStyle = p.colour; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(mx, my, 18, 0, TWO_PI); ctx.stroke();
+    ctx.fillStyle = p.colour;
+    ctx.fillText(PLANET_GLYPH[p.name] || p.name[0], mx, my + 1);
+    // IC label
+    ctx.fillStyle = '#0b0b15';
+    ctx.beginPath(); ctx.arc(ix, iy, 14, 0, TWO_PI); ctx.fill();
+    ctx.strokeStyle = p.colour; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(ix, iy, 14, 0, TWO_PI); ctx.stroke();
+    ctx.fillStyle = p.colour;
+    ctx.font = 'bold 17px "Cormorant Garamond", serif';
+    ctx.fillText(PLANET_GLYPH[p.name] || p.name[0], ix, iy + 1);
     ctx.font = 'bold 22px "Cormorant Garamond", serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(PLANET_GLYPH[planet] || planet[0], x, y);
+  }
+
+  // ----- Birth-place marker -----
+  // Mark where the chart was cast — useful as an anchor when scanning
+  // the map for "good places" relative to home.
+  if (Number.isFinite(natal.birth.latDeg) && Number.isFinite(natal.birth.lonDeg)) {
+    const [bx, by] = projectMap(natal.birth.lonDeg / RAD, natal.birth.latDeg / RAD);
+    ctx.fillStyle = '#fff8dd';
+    ctx.beginPath(); ctx.arc(bx, by, 7, 0, TWO_PI); ctx.fill();
+    ctx.strokeStyle = '#0b0b15'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(bx, by, 7, 0, TWO_PI); ctx.stroke();
+    ctx.fillStyle = '#fff8dd';
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(' Birth place', bx + 9, by - 8);
   }
 
   ctx.restore();   // remove map clip
 
-  // Border around the map band.
-  ctx.strokeStyle = 'rgba(245,214,128,0.45)';
+  // Map border.
+  ctx.strokeStyle = 'rgba(245,214,128,0.5)';
   ctx.lineWidth = 1.4;
-  ctx.strokeRect(0, MAP_TOP, W, MAP_HEIGHT);
+  ctx.strokeRect(0, MAP_TOP, MAP_W, MAP_H);
 
-  // Legend across the bottom.
-  const legendY = MAP_BOTTOM + 50;
+  // ---- Legend ----
+  const legendY = MAP_BOTTOM + 22;
   ctx.fillStyle = '#9b9bbd';
   ctx.textAlign = 'left';
   ctx.font = 'bold 11px Inter, sans-serif';
-  ctx.fillText('PLANETS', 60, legendY - 10);
-  const legendCols = 5;
-  const colW = (W - 120) / legendCols;
+  ctx.fillText('PLANETS', 50, legendY);
+
+  // 10 planet swatches across the row.
+  const slotW = (W - 100) / 10;
   for (let i = 0; i < PLANETS.length; i++) {
     const planet = PLANETS[i];
     const colour = PLANET_COLOR[planet];
-    const col = i % legendCols;
-    const row = Math.floor(i / legendCols);
-    const x = 60 + col * colW;
-    const y = legendY + row * 26;
-    // Coloured solid stroke + dashed stroke, then planet name.
+    const x = 50 + i * slotW;
+    const y = legendY + 22;
     ctx.strokeStyle = colour;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.4;
     ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 18, y); ctx.stroke();
-    ctx.setLineDash([5, 4]);
-    ctx.beginPath(); ctx.moveTo(x + 22, y); ctx.lineTo(x + 40, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 22, y); ctx.stroke();
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath(); ctx.moveTo(x + 26, y); ctx.lineTo(x + 48, y); ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = colour;
     ctx.font = 'bold 14px "Cormorant Garamond", serif';
-    ctx.fillText(`${PLANET_GLYPH[planet]}  ${planet}`, x + 50, y + 4);
+    ctx.fillText(`${PLANET_GLYPH[planet]}  ${planet}`, x + 56, y + 5);
   }
-  // MC/IC/ASC/DSC key.
+
+  // Right side: line-style key.
   ctx.fillStyle = '#9b9bbd';
-  ctx.font = '11px Inter, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('SOLID = MC / IC (meridian)        DASHED = ASC / DSC (horizon)', W - 60, legendY + 60);
-
-  // Footer.
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#6d6d88';
   ctx.font = '11px Inter, sans-serif';
-  ctx.fillText('Generated by Ology — Astrocartography (equirectangular projection)', W / 2, H - 24);
+  ctx.fillText('SOLID = MC / IC (meridian)   ·   DASHED = ASC / DSC (horizon)   ·   FAINT = midpoints (45 pairs)', W - 50, H - 12);
 
-  // Trigger PNG download.
+  // ---- Trigger PNG download ----
   const dataURL = canvas.toDataURL('image/png');
   const a = document.createElement('a');
   a.href = dataURL;
