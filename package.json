@@ -1,0 +1,37 @@
+{
+  "name": "ology",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Chronological harmonic resonance field visualization of planetary interference patterns.",
+  "scripts": {
+    "postinstall": "node scripts/copy-swephfiles.mjs",
+    "predev": "node scripts/copy-swephfiles.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-swephfiles.mjs",
+    "build": "vite build",
+    "prebuild:personal": "node scripts/copy-swephfiles.mjs",
+    "build:personal": "vite build --mode personal && node scripts/rename-personal.mjs",
+    "prebuild:ology": "node scripts/copy-swephfiles.mjs",
+    "build:ology": "VITE_ACTIVE_SYSTEMS=western,vedic,chinese,gematria vite build --mode ology && node scripts/rename-personal.mjs --dist=dist-ology",
+    "preview": "vite preview",
+    "deploy:personal": "npm run build:personal && echo '→ dist-personal/ is ready to upload to GitHub Pages'",
+    "deploy:ology": "npm run build:ology && echo '→ dist-ology/ is ready to upload'"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "swisseph-wasm": "^0.0.5",
+    "three": "^0.162.0",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "terser": "^5.46.1",
+    "vite": "^5.3.1",
+    "vite-plugin-pwa": "^1.2.0"
+  }
+}

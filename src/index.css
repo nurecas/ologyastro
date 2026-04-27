@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: #080810;
+  color: #e6e6f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* #root sizes to at least full height so chart views (which use h-screen
+   internally) fit exactly; if its content is taller than the viewport
+   — as the entry form can be on short screens — the page scrolls. */
+#root {
+  min-height: 100vh;
+}
+
+canvas {
+  display: block;
+}
+
+/* custom thin range slider */
+input[type="range"].spine-scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"].spine-scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f5d680;
+  box-shadow: 0 0 12px rgba(245, 214, 128, 0.8);
+  cursor: grab;
+}
+input[type="range"].spine-scrub::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f5d680;
+  border: none;
+  box-shadow: 0 0 12px rgba(245, 214, 128, 0.8);
+  cursor: grab;
+}
+
+.btn-ghost {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: #d8d8e8;
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: background 120ms ease;
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,0.08);
+}
+.btn-ghost.active {
+  background: rgba(245, 214, 128, 0.12);
+  border-color: rgba(245, 214, 128, 0.4);
+  color: #f5d680;
+}
+
+.form-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e6e6f0;
+  border-radius: 6px;
+  padding: 9px 11px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 120ms ease;
+}
+.form-input:focus {
+  border-color: rgba(245, 214, 128, 0.5);
+}
+.form-input::placeholder { color: rgba(230, 230, 240, 0.3); }
+
+/* Hide native scrollbars on horizontally-scrolling pill rows (used by the
+   SystemNav and per-system mode-pill rows on narrow viewports). The bar
+   still scrolls — just without the visual chrome cluttering the design. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

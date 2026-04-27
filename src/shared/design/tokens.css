@@ -1,0 +1,57 @@
+/* Ology — design tokens.
+   Single source of truth for color, typography, radii and spacing.
+   Imported by every personal entry (personal.html, gematria.html, …). */
+
+:root {
+  /* Surfaces */
+  --bg-0:#080810;
+  --bg-1:#0a0a14;
+  --bg-2:#0c0c18;
+  --bg-3:#0b0b15;
+
+  /* Ink */
+  --ink:#e6e6f0;
+  --ink-dim:#9b9bbd;
+  --ink-faint:#6d6d88;
+  --ink-muted:#8b8ba5;
+
+  /* Accents */
+  --gold:#f5d680;
+  --gold-soft:#fff8dd;
+  --gold-warm:#f4e5a8;
+  --gold-dim:#d79b3a;
+  --violet:#b79aff;
+  --violet-soft:#d8caff;
+  --crimson:#ff6a6a;
+  --jade:#44ff88;
+  --azure:#79d0ff;
+
+  /* Lines */
+  --line:rgba(255,255,255,0.10);
+  --line-soft:rgba(255,255,255,0.05);
+  --line-gold:rgba(245,214,128,0.35);
+
+  /* Glass */
+  --glass:rgba(255,255,255,0.04);
+  --glass-strong:rgba(255,255,255,0.06);
+
+  /* Type */
+  --font-serif:'Cormorant Garamond', serif;
+  --font-sans:'Inter', system-ui, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, monospace;
+  --font-hebrew:'Frank Ruhl Libre', serif;
+  --font-greek:'GFS Didot', serif;
+  --font-arabic:'Noto Naskh Arabic', serif;
+
+  /* Radii */
+  --r-sm:6px;
+  --r-md:10px;
+  --r-lg:14px;
+  --r-xl:20px;
+
+  /* Tracking */
+  --track-tight:0.02em;
+  --track-wide:0.12em;
+  --track-wider:0.18em;
+  --track-widest:0.25em;
+}

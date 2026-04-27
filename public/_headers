@@ -1,0 +1,37 @@
+# Cloudflare Pages / Netlify / similar static-host headers.
+# Guarantees correct MIME types for every file the browser imports as a
+# module — strict MIME checking on `<script type="module">` will reject
+# anything served as application/octet-stream.
+
+# Vite's bundled ES-module output lives here. Most static hosts auto-
+# detect this correctly, but mis-configured edges sometimes don't.
+/assets/*.js
+  Content-Type: application/javascript; charset=utf-8
+
+/assets/*.mjs
+  Content-Type: application/javascript; charset=utf-8
+
+/assets/*.css
+  Content-Type: text/css; charset=utf-8
+
+/assets/*.wasm
+  Content-Type: application/wasm
+
+# Service worker + workbox helper — both must be served as JS.
+/sw.js
+  Content-Type: application/javascript; charset=utf-8
+  Service-Worker-Allowed: /
+
+/workbox-*.js
+  Content-Type: application/javascript; charset=utf-8
+
+# Swiss Ephemeris files under /swephfiles/.
+/swephfiles/*.js
+  Content-Type: application/javascript; charset=utf-8
+
+/swephfiles/*.wasm
+  Content-Type: application/wasm
+
+# The 12 MB Swiss data blob is binary, but cached forever (content-addressed).
+/swephfiles/*
+  Cache-Control: public, max-age=31536000, immutable

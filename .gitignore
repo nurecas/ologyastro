@@ -1,0 +1,26 @@
+node_modules/
+dist/
+dist-personal/
+dist-ology/
+
+# Swiss Ephemeris runtime assets — mirrored from node_modules on install /
+# prebuild by scripts/copy-swephfiles.mjs. Not checked in (12 MB blob).
+public/swephfiles/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# macOS / editor cruft
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vite cache
+.vite/
