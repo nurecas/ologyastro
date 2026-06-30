@@ -101,13 +101,13 @@ export default function App() {
       {/* Header */}
       <header className="text-center pt-12 pb-6 px-6">
         <div className="text-[#d79b3a]/70 text-[12px] tracking-[0.5em] uppercase font-serif mb-3">
-          ✦ Mispar · Isopsephy · Abjad ✦
+          ✦ Pythagorean · Mispar · Isopsephy · Abjad ✦
         </div>
         <h1 className="font-serif font-light text-[64px] leading-none tracking-tight bg-gradient-to-b from-[#fff8dd] to-[#f5d680] bg-clip-text text-transparent">
-          Gematria
+          Numerology
         </h1>
         <p className="font-serif italic text-[16px] text-[#9b9bbd] mt-2 tracking-wide">
-          The sacred art of numbering the letters
+          The sacred art of numbering names and letters
         </p>
       </header>
 

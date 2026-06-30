@@ -82,7 +82,7 @@ const SCHEMA = {
         arudha_lagna: 'Jaimini AL — projected image of the self.',
         upapada_lagna: 'Jaimini UL — long-term partnership indicator (Arudha of the 12th).',
         vargas: 'Array of all 16 divisional charts (D-1 through D-60). Each: { d, name, sa, area, lagna (sign), planets[] (sign, house, dignity in that varga) }. Most consulted: D-9 Navamsa (marriage/dharma), D-10 Dasamsa (career), D-60 Shastiamsa.',
-        dasha: 'Vimshottari tree seeded by Moon\'s nakshatra: running_lord, current_maha, current_antar, current_pratyantar, next_mahadashas (full 120-year cycle), antardashas_in_current_maha. All dates ISO 8601.',
+        dasha: 'Vimshottari tree seeded by Moon\'s nakshatra: running_lord, current_maha, current_antar, current_pratyantar, next_mahadashas (full 120-year cycle with nested antardashas and pratyantardashas), antardashas_in_current_maha. All dates ISO 8601.',
         panchang: 'The five limbs at birth: vara (weekday), tithi (lunar day name + paksha), yoga (Sun+Moon based), karana, nakshatra.',
         yogas: 'Array of detected planetary combinations — Pancha Mahapurusha (Ruchaka/Bhadra/Hamsa/Malavya/Sasha), Gajakesari, Budhaditya, Chandra-Mangala, Sunapha/Anapha/Durudhura/Kemadruma, Adhi, Vipareeta Raja Yoga. Each: { id, name, reason, blurb, strength }.',
         doshas: '{ kala_sarpa, mangal, combust[] } — null when not present. Combust is an array of {planet, arcDeg, orbDeg, note}.',
@@ -98,6 +98,38 @@ function fmtDeg(d) {
     const dd = Math.floor(d),
         mm = Math.round((d - dd) * 60);
     return `${dd}°${String(mm).padStart(2, '0')}'`;
+}
+
+function isoOrNull(value) {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString();
+
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function serializeDashaPeriod(period, includeChildren = true) {
+    if (!period) return null;
+
+    const out = {
+        lord: period.lord,
+        years: period.years,
+        start: isoOrNull(period.start),
+        end: isoOrNull(period.end),
+    };
+
+    if (includeChildren) {
+        const antars = antarSequence(period);
+
+        out.antardashas = antars.map(antar => ({
+            ...serializeDashaPeriod(antar, false),
+            pratyantardashas: antarSequence(antar).map(pratyantar =>
+                serializeDashaPeriod(pratyantar, false)
+            ),
+        }));
+    }
+
+    return out;
 }
 
 function buildBirth(birth, timeUnknown) {
@@ -121,12 +153,7 @@ function buildChart(state) {
     const aspects = aspectMap(c);
     const cur = currentMaha(c.dasha.sequence, now);
     const antar = currentAntar(cur, now);
-    const mahaSequence = c.dasha.sequence.map(m => ({
-        lord: m.lord,
-        years: m.years,
-        start: m.start.toISOString(),
-        end: m.end.toISOString(),
-    }));
+    const mahaSequence = c.dasha.sequence.map(m => serializeDashaPeriod(m, true));
     return {
         as_of: now.toISOString(),
         ayanamsa: c.ayanamsa,
@@ -190,7 +217,15 @@ function buildChart(state) {
                     name: p.name,
                     sign: p.sign,
                     sign_idx: p.signIdx,
+                    source_lon_deg: p.sourceLonDeg ?? p.lonDeg ?? null,
+                    varga_lon_deg: p.vargaLonDeg ?? null,
+                    within_deg: typeof p.withinDeg === 'number' && p.withinDeg !== 0 ? p.withinDeg : null,
+                    within_formatted: typeof p.withinDeg === 'number' && p.withinDeg !== 0 ? fmtDeg(p.withinDeg) : null,
                     house: p.house,
+                    nakshatra: p.nakshatra ?? null,
+                    nakshatra_index: p.nakshatraIndex ?? null,
+                    pada: p.pada ?? null,
+                    nakshatra_lord: p.nakshatraLord ?? null,
                     dignity: p.dignity,
                 })),
             };
@@ -198,18 +233,14 @@ function buildChart(state) {
         dasha: {
             janma_nakshatra: c.dasha.nakshatra,
             running_lord: c.dasha.runningLord,
-            current_maha: {
-                lord: cur.lord,
-                years: cur.years,
-                start: cur.start.toISOString(),
-                end: cur.end.toISOString(),
+            tree_depth: {
+                mahadasha: true,
+                antardasha: true,
+                pratyantardasha: true,
+                note: 'Each next_mahadashas[] item contains nested antardashas; each antardasha contains nested pratyantardashas.'
             },
-            current_antar: antar ? {
-                lord: antar.lord,
-                years: antar.years,
-                start: antar.start.toISOString(),
-                end: antar.end.toISOString(),
-            } : null,
+            current_maha: serializeDashaPeriod(cur, false),
+            current_antar: serializeDashaPeriod(antar, false),
             current_pratyantar: (() => {
                 const p = antar ? currentPratyantar(antar, now) : null;
                 return p ? {
@@ -221,10 +252,8 @@ function buildChart(state) {
             })(),
             next_mahadashas: mahaSequence,
             antardashas_in_current_maha: antarSequence(cur).map(a => ({
-                lord: a.lord,
-                years: a.years,
-                start: a.start.toISOString(),
-                end: a.end.toISOString(),
+                ...serializeDashaPeriod(a, false),
+                pratyantardashas: antarSequence(a).map(p => serializeDashaPeriod(p, false)),
             })),
         },
         panchang: c.panchang ? {

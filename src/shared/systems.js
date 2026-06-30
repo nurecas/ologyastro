@@ -56,8 +56,11 @@ export const SYSTEMS = [
     enabled: isActive('chinese'),
   },
   {
+    // System id / url / storage keys stay 'gematria' (internal); the
+    // user-facing label is "Numerology" — the umbrella term. The specific
+    // gematria/isopsephy/abjad ciphers keep their names inside the system.
     id: 'gematria',
-    label: 'Gematria',
+    label: 'Numerology',
     url: 'gematria.html',
     ctaLabel: 'Reveal the Numbers',
     accent: '#b79aff',

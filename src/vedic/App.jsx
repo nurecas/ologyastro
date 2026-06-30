@@ -15,6 +15,7 @@ import SadeSati from './components/SadeSati.jsx';
 import Vargas from './components/Vargas.jsx';
 import Strength from './components/Strength.jsx';
 import Gochara from './components/Gochara.jsx';
+import LifeVectors from './components/LifeVectors.jsx';
 import SettingsDrawer from './components/SettingsDrawer.jsx';
 import PrecisionBadge from './components/PrecisionBadge.jsx';
 import BetaDialog from '../shared/shell/BetaDialog.jsx';
@@ -28,6 +29,7 @@ const MODES = [
   { id: 'vargas',     label: 'Vargas',      hint: 'Divisional charts D-1 through D-60' },
   { id: 'strength',   label: 'Strength',    hint: 'Ashtakavarga bindu table' },
   { id: 'dasha',      label: 'Dasha',       hint: 'Vimshottari periods + date probe' },
+  { id: 'life',       label: 'Life',        hint: 'Life-domain activation across 100 years (dasha · gochara · ashtakavarga)' },
   { id: 'yogas',      label: 'Yogas',       hint: 'Combinations · doshas · argala · rashi drishti' },
   { id: 'gochara',    label: 'Transits',    hint: 'Live gochara from natal Moon and Lagna' },
   { id: 'sadeSati',   label: 'Sade Sati',   hint: 'Saturn periods over the lifetime' },
@@ -155,6 +157,7 @@ export default function App() {
         {mode === 'vargas'     && <Vargas />}
         {mode === 'strength'   && <Strength />}
         {mode === 'dasha'      && <Dasha />}
+        {mode === 'life'       && <LifeVectors />}
         {mode === 'yogas'      && <Yogas />}
         {mode === 'gochara'    && <Gochara />}
         {mode === 'sadeSati'   && <SadeSati />}

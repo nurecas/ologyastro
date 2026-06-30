@@ -6,9 +6,9 @@ client-side:
 | Entry | URL | Tradition |
 |---|---|---|
 | Western (Personal) | `personal.html` | Swiss-Ephemeris-backed natal charts, transits, astrocartography, synastry, predictive (progressions, solar arcs, returns, Davison). |
-| Vedic (Jyotish) | `vedic.html` | Sidereal zodiac with Lahiri / KP / Raman / True Citra / Fagan-Bradley. Whole-sign houses, 16 vargas (D-1..D-60), Vimshottari dasha, Sade Sati, yogas, doshas, argala, ashtakavarga, gochara, upagrahas. |
+| Vedic (Jyotish) | `vedic.html` | Sidereal zodiac with Lahiri / KP / Raman / True Citra / Fagan-Bradley. Whole-sign houses, 16 vargas (D-1..D-60), Vimshottari dasha, Life Vectors, Sade Sati, yogas, doshas, argala, ashtakavarga, gochara, upagrahas. |
 | Chinese (BaZi) | `chinese.html` | Four Pillars with Lichun-anchored solar year, jié-anchored months, sexagenary day cycle, Five Tigers / Five Mice rules, Ten Gods, Day Master strength, Luck Pillars. |
-| Gematria | `gematria.html` | English / Hebrew / Greek / Arabic numerologies, name/word analysis, date numerology, comparison view. |
+| Numerology | `gematria.html` | Pythagorean numerology plus Hebrew gematria, Greek isopsephy, and Arabic abjad. Name/word analysis, date numerology, comparison view. |
 
 Every page runs entirely in the browser. **No server, no database, no
 API calls at runtime** beyond the optional Open-Meteo city geocoder.
