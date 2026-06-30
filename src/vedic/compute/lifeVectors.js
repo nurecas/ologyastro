@@ -16,8 +16,18 @@
 //
 // The secondary signal is **Gochara** (transits) of the slow grahas
 // (Jupiter, Saturn, Rāhu, Ketu — the only ones with multi-year structure),
-// read against the Lagna, modulated by the **Aṣṭakavarga** bindus of the
-// sign they transit, with a **Sade Sati** boost on the Self / Health lines.
+// modulated by the **Aṣṭakavarga** bindus of the sign they transit, with a
+// **Sade Sati** boost on the Self / Health lines.
+//
+// FRAME NOTE — the domain bhāvas are anchored to the LAGNA (a transit
+// "activates Career" when it touches the natal 10th from Lagna), to stay
+// consistent with the Lagna-based daśā relevance engine above; a domain is
+// a fixed natal bhāva, which is intrinsically a Lagna question. Classical
+// gochara's auspiciousness tables are read primarily from the natal Moon —
+// that Moon frame IS folded in here through the two phenomena that matter
+// most: Sade Sati (Saturn 12/1/2 from Moon) on Self/Health, and Jupiter's
+// 2/5/9/11-from-Moon blessing on the Auspicious composite. A full dual-frame
+// (Chandra-Lagna) domain read is a possible future enhancement.
 //
 // Two generic composite lines (Auspicious flow / Testing periods) sum the
 // functional benefic vs. malefic activation so the user gets a top-level
@@ -26,7 +36,7 @@
 // Sources: BPHS (daśā + bhāva kāraka + gochara chapters), Phaladeepika,
 // standard Parāśarī functional-nature (yogakāraka / dusthāna-lord) rules.
 
-import { RASHIS, EXALT } from './data.js';
+import { RASHIS } from './data.js';
 import { housesAspectedBy } from './drishti.js';
 import { currentMaha, currentAntar } from './dasha.js';
 import {
@@ -53,10 +63,16 @@ export const VEDIC_DOMAINS = [
     color: '#9adfa8', blurb: 'Intelligence, creativity, children, pūrva-puṇya (past merit). The 5th bhāva; Jupiter is the putra-kāraka.' },
   { id: 'relationship',name: 'Partnership',          houses: [7],     karakas: ['Venus'],
     color: '#f7c7c7', blurb: 'Marriage, partnership, the other. The 7th bhāva; Venus is the kalatra-kāraka.' },
-  { id: 'career',      name: 'Career & Status',      houses: [10],    karakas: ['Sun', 'Saturn', 'Mercury'],
-    color: '#ffb066', blurb: 'Karma, profession, public standing. The 10th bhāva; Sun, Saturn and Mercury are its kārakas.' },
-  { id: 'health',      name: 'Health & Adversity',   houses: [6, 8],  karakas: ['Mars', 'Saturn'],
-    color: '#ff6a6a', blurb: 'Illness, debts, enemies (6th) and crises, longevity, the hidden (8th). Mars and Saturn rule the struggle.' },
+  { id: 'career',      name: 'Career & Status',      houses: [10],    karakas: ['Sun', 'Saturn', 'Mercury', 'Jupiter'],
+    color: '#ffb066', blurb: 'Karma, profession, public standing. The 10th bhāva; its lead kārakas are Sun, Saturn, Mercury and Jupiter.' },
+  // Health & Adversity is a DUḤSTHĀNA domain (6th + 8th). Unlike the
+  // benefic-framed lines, a HIGHER value here means a more TESTING health /
+  // adversity stretch, not a flourishing one. Marked `affliction: true` so
+  // the relevance engine reads its activation as intensity (no benefic
+  // dignity scaler — a strong 6th/8th lord must not read as "less adversity")
+  // and the UI renders it as a pressure line.
+  { id: 'health',      name: 'Health & Adversity',   houses: [6, 8],  karakas: ['Mars', 'Saturn'], affliction: true,
+    color: '#ff6a6a', blurb: 'Illness, debts, enemies (6th) and crises, longevity, the hidden (8th). On this line a HIGHER value marks a more demanding health / adversity period — pressure, not flourishing.' },
   { id: 'dharma',      name: 'Dharma & Spirit',      houses: [9, 12], karakas: ['Jupiter', 'Ketu'],
     color: '#b79aff', blurb: 'Fortune, guru, higher purpose (9th) and liberation, loss, retreat (12th). Jupiter and Ketu carry the spiritual current.' },
 ];
@@ -75,6 +91,11 @@ export const VEDIC_VECTORS = [...VEDIC_DOMAINS, ...VEDIC_COMPOSITES];
 const KENDRAS  = new Set([1, 4, 7, 10]);
 const TRIKONAS = new Set([1, 5, 9]);
 const DUSTHANAS = new Set([6, 8, 12]);
+// Natural benefics — used for Kendrādhipati doṣa (BPHS Ch.34): a natural
+// benefic that lords a PURE kendra (4/7/10 with no trikoṇa) loses benefic
+// potency. The 1st (a kendra AND trikoṇa) is exempt — the Lagna lord is
+// universally benefic — which is why the penalty is gated on !lordsTrikona.
+const NATURAL_BENEFICS = new Set(['Jupiter', 'Venus', 'Mercury', 'Moon']);
 
 // Slow grahas — the only transits with multi-year structure. Fast grahas
 // (Sun..Mars) average to a flat line on a life-scale, so we exclude them
@@ -85,7 +106,7 @@ const SLOW_TRANSITS = ['Jupiter', 'Saturn', 'Rahu', 'Ketu'];
 const TRANSIT_WEIGHT = { Jupiter: 0.9, Saturn: 1.0, Rahu: 0.7, Ketu: 0.7 };
 
 // Dignity → strength multiplier. A daśā lord delivers its significations in
-// proportion to its natal strength.
+// proportion to its natal strength. Used by the coarse generic composites.
 function dignityFactor(planet) {
   switch (planet?.dignity) {
     case 'exalted':     return 1.35;
@@ -94,6 +115,34 @@ function dignityFactor(planet) {
     case 'debilitated': return 0.55;
     default:            return 1.0;   // neutral, or Rāhu/Ketu (dignity null)
   }
+}
+
+// Richer strength multiplier for the domain relevance table — folds in two
+// pieces of natal data already present on the chart that the bare dignity
+// switch ignores:
+//   • Neecha-bhaṅga — a debilitated lord whose debility is CANCELLED
+//     (chart.yogas carries a `neecha_bhanga_<planet>` entry) is restored to
+//     modest strength rather than the flat 0.55 floor (cancellation restores,
+//     it does not exalt — BPHS Ch.39 / Phaladeepika Ch.7).
+//   • Naisargika relation — a lord in a natural friend's sign delivers a
+//     little more fully; in an enemy's sign, a little less. (chart.planets[]
+//     carries `relation` ∈ self|friend|enemy|neutral.)
+export function strengthMultiplier(lp, nbPlanets) {
+  if (!lp) return 1.0;
+  let df;
+  switch (lp.dignity) {
+    case 'exalted':     df = 1.35; break;
+    case 'mooltrikona': df = 1.30; break;
+    case 'own':         df = 1.20; break;
+    case 'debilitated':
+      df = (lp.name && nbPlanets.has(lp.name.toLowerCase())) ? 1.10 : 0.55;
+      break;
+    default:            df = 1.0;   // neutral, or Rāhu/Ketu (dignity null)
+  }
+  // 'self' is already captured by own/mooltrikona — don't double-count it.
+  if (lp.relation === 'friend')     df *= 1.10;
+  else if (lp.relation === 'enemy') df *= 0.85;
+  return df;
 }
 
 // Houses (1-based from Lagna) that a planet rules. Rāhu/Ketu rule nothing.
@@ -112,7 +161,7 @@ function housesRuledBy(planetName, lagnaSignIdx) {
 // kendra and a trikona is a yogakāraka (strongly benefic). Rāhu/Ketu have
 // no lordship → treated as mild malefics (they act per dispositor, but as
 // shadow grahas lean malefic for a generic composite).
-function functionalScore(planetName, lagnaSignIdx) {
+export function functionalScore(planetName, lagnaSignIdx) {
   const houses = housesRuledBy(planetName, lagnaSignIdx);
   if (houses.length === 0) {
     return (planetName === 'Rahu' || planetName === 'Ketu') ? -1.0 : 0;
@@ -131,6 +180,9 @@ function functionalScore(planetName, lagnaSignIdx) {
   // Yogakāraka bonus — lords a kendra AND a trikona (e.g. Saturn for Tula
   // lagna, Venus for Makara lagna).
   if (lordsKendra && lordsTrikona) score += 1.5;
+  // Kendrādhipati doṣa — a natural benefic lording a PURE kendra (no
+  // trikoṇa, so the Lagna lord is exempt) sheds some benefic potency.
+  if (NATURAL_BENEFICS.has(planetName) && lordsKendra && !lordsTrikona) score -= 0.5;
   return score;
 }
 
@@ -142,6 +194,13 @@ function buildRelevanceTable(chart) {
   const lagna = chart.lagnaSignIdx;
   const planetByName = Object.fromEntries(chart.planets.map(p => [p.name, p]));
   const lords = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+  // Planets whose debility is cancelled (neecha-bhaṅga) — already detected
+  // on the chart by the yoga engine. Stored as lowercase planet names.
+  const nbPlanets = new Set(
+    (chart.yogas || [])
+      .filter(y => y.id?.startsWith('neecha_bhanga_'))
+      .map(y => y.id.slice('neecha_bhanga_'.length))
+  );
 
   const table = {};
   for (const lord of lords) {
@@ -150,7 +209,7 @@ function buildRelevanceTable(chart) {
     const ruled = new Set(housesRuledBy(lord, lagna));
     const occupiedHouse = lp ? lp.house : null;
     const aspectedSigns = lp ? new Set(housesAspectedBy(lord, lp.signIdx)) : new Set();
-    const df = dignityFactor(lp);
+    const df = strengthMultiplier(lp, nbPlanets);
 
     for (const domain of VEDIC_DOMAINS) {
       const domainHouses = new Set(domain.houses);
@@ -164,7 +223,10 @@ function buildRelevanceTable(chart) {
       if (occupiedHouse != null && domainHouses.has(occupiedHouse)) rel += 0.7;
       // Dṛṣṭi — the lord aspects the bhāva.
       if ([...aspectedSigns].some(s => domainSigns.has(s))) rel += 0.4;
-      table[lord][domain.id] = rel * df;
+      // Affliction (duḥsthāna) domains read activation as INTENSITY, not
+      // benefic delivery: a strong 6th/8th lord must NOT score as lower
+      // adversity than a weak one, so the benefic dignity scaler is dropped.
+      table[lord][domain.id] = rel * (domain.affliction ? 1.0 : df);
     }
   }
   return table;
@@ -183,7 +245,14 @@ function buildRelevanceTable(chart) {
 // scale).
 // ---------------------------------------------------------------------------
 export function lifeVectorSeriesVedic({ chart, startYear, endYear, samplesPerYear = 12 }) {
-  if (!chart || !chart.dasha) return { years: new Float64Array(0), series: [], events: [] };
+  const EMPTY = { years: new Float64Array(0), series: [], events: [] };
+  // Need a chart with a real Vimśottarī sequence (the dominant signal). An
+  // empty sequence would silently collapse to a misleading gochara-only graph.
+  if (!chart || !chart.dasha?.sequence?.length) return EMPTY;
+  // Reject a degenerate or inverted window (e.g. a birth year ≥ 2080 clamps
+  // start===end). `!(end > start)` also rejects NaN/undefined bounds. This
+  // keeps the year axis honest and avoids the UI dividing by a zero span.
+  if (!(endYear > startYear)) return EMPTY;
 
   // Ensure sidereal mode (change-gated, safe even if already set).
   setEphemerisOptions({ zodiac: 'sidereal', ayanamsa: chart.ayanamsa || 'lahiri' });
@@ -191,7 +260,10 @@ export function lifeVectorSeriesVedic({ chart, startYear, endYear, samplesPerYea
   const lagna = chart.lagnaSignIdx;
   const moon = chart.planets.find(p => p.name === 'Moon');
   const moonSign = moon ? moon.signIdx : 0;
-  const sav = chart.ashtakavarga?.sav || new Array(12).fill(25);
+  // Shape-check (not just truthiness): an empty or short array would slip
+  // through `|| fill(25)` and feed NaN into savFactor. 25 = neutral bindu.
+  const sav = (Array.isArray(chart.ashtakavarga?.sav) && chart.ashtakavarga.sav.length === 12)
+    ? chart.ashtakavarga.sav : new Array(12).fill(25);
   const relevance = buildRelevanceTable(chart);
 
   // Pre-resolve domain house-signs.
@@ -217,7 +289,12 @@ export function lifeVectorSeriesVedic({ chart, startYear, endYear, samplesPerYea
 
   // SAV → magnitude modulation. High bindu sign ⇒ a transit ripens more
   // fully. Maps SAV 0..40 → factor ~0.7..1.3 (typical 25..35 → 1.07..1.22).
-  const savFactor = (signIdx) => 0.7 + (Math.min(40, Math.max(0, sav[signIdx])) / 40) * 0.6;
+  // Element-defensive: a non-finite or out-of-bounds entry falls back to 25.
+  const savFactor = (signIdx) => {
+    const v = Number(sav?.[signIdx]);
+    const b = Number.isFinite(v) ? v : 25;
+    return 0.7 + (Math.min(40, Math.max(0, b)) / 40) * 0.6;
+  };
 
   for (let t = 0; t < numSamples; t++) {
     const yr = startYear + totalYears * (t / (numSamples - 1));
@@ -238,13 +315,16 @@ export function lifeVectorSeriesVedic({ chart, startYear, endYear, samplesPerYea
       raw[d.id][t] += s;   // DASHA_WEIGHT = 1.0 (baseline)
     }
 
-    // Generic composites from daśā functional nature.
+    // Generic composites from daśā functional nature. Both terms scale UP
+    // with strength (BPHS fullness-of-results): a strong functional benefic
+    // blesses more fully; a strong functional malefic tests more forcefully
+    // (a weak/debilitated malefic gives feeble, obstructed results).
     let shubha = 0, ashubha = 0;
     for (const r of running) {
       const fs = funcScore[r.lord] || 0;
       const df = dignityFactor(planetByName[r.lord]);
       if (fs > 0) shubha  += r.w * fs * df;
-      if (fs < 0) ashubha += r.w * (-fs) * (2 - Math.min(1.35, df)); // weak malefic bites harder
+      if (fs < 0) ashubha += r.w * (-fs) * df;
     }
 
     // ---- Gochara of slow grahas (secondary signal) ----

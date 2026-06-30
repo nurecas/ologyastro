@@ -23,15 +23,34 @@ export default function LifeVectors() {
   const svgRef = useRef(null);
   const [w, setW] = useState(1200);
 
+  // Track the SVG's own width for ALL reflow causes (container, scrollbar
+  // gutter, browser zoom) — the hover math depends on rect.width === w.
+  // ResizeObserver also fires on window resizes, so it subsumes the old
+  // window listener.
   useEffect(() => {
-    const handle = () => { if (svgRef.current) setW(svgRef.current.clientWidth); };
-    handle();
-    window.addEventListener('resize', handle);
-    return () => window.removeEventListener('resize', handle);
+    const el = svgRef.current;
+    if (!el) return;
+    const update = () => setW(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
+  // Close the info popover on Escape (consistent with the other popovers in
+  // the app — Western InfoPopover, Numerology LetterModal).
+  useEffect(() => {
+    if (!info) return;
+    const onKey = (e) => { if (e.key === 'Escape') setInfo(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [info]);
+
   const startYear = birth.year;
-  const endYear   = Math.min(birth.year + 100, 2080);
+  // Guard the upper edge: a birth year ≥ 2080 would collapse start===end and
+  // divide-by-zero the x-axis. Force at least a 1-year span.
+  const endYear   = Math.max(startYear + 1, Math.min(birth.year + 100, 2080));
+  const span      = Math.max(1, endYear - startYear);
 
   const { years, series, events } = useMemo(
     () => chart
@@ -45,7 +64,7 @@ export default function LifeVectors() {
   const W_plot = w - padL - padR;
   const H_plot = H - padT - padB;
 
-  const xOfYear = (y) => padL + ((y - startYear) / (endYear - startYear)) * W_plot;
+  const xOfYear = (y) => padL + ((y - startYear) / span) * W_plot;
   const yOfVal  = (v) => padT + H_plot - v * H_plot;   // values already in [0,1]
 
   const paths = series.map((s) => {
@@ -74,7 +93,7 @@ export default function LifeVectors() {
     const x = e.clientX - rect.left;
     if (x < padL || x > padL + W_plot) { setHover(null); return; }
     const frac = (x - padL) / W_plot;
-    const yr = startYear + frac * (endYear - startYear);
+    const yr = startYear + frac * span;
     const idx = Math.max(0, Math.min(years.length - 1, Math.round(frac * (years.length - 1))));
     // Running daśā at this year — the headline Vedic context.
     let maha = null, antar = null;
@@ -184,13 +203,15 @@ export default function LifeVectors() {
             );
           })}
 
-          {/* Vector lines */}
+          {/* Vector lines. Composites and affliction (Health) domains are
+              dashed so the reader knows UP on those lines = "more of a
+              testing/coarse signal", not "better". */}
           {paths.map(({ vector, path }) =>
             path ? (
               <path key={vector.id} d={path}
                     stroke={vector.color}
                     strokeWidth={vector.composite ? 1.6 : 1.3}
-                    strokeDasharray={vector.composite ? '5 4' : ''}
+                    strokeDasharray={vector.composite ? '5 4' : (vector.affliction ? '2 3' : '')}
                     fill="none" opacity={0.9} filter="url(#vLifeGlow)" />
             ) : null
           )}
@@ -224,14 +245,21 @@ export default function LifeVectors() {
                 {hover.maha.lord} Mahādaśā{hover.antar ? ` · ${hover.antar.lord} Antar` : ''}
               </div>
             )}
-            {hover.data.filter(d => enabled[d.vector.id])
-              .sort((a, b) => b.value - a.value)
-              .map(d => (
-                <div key={d.vector.id} className="flex items-center justify-between gap-3">
-                  <span style={{ color: d.vector.color }}>{d.vector.name}</span>
-                  <span className="text-[#d8d8e8]">{(d.value * 100).toFixed(0)}%</span>
-                </div>
-              ))}
+            {/* Fixed order (matches the toggle badges / line legend); NO
+                descending sort — each % is a fraction of THAT line's own
+                lifetime peak, so a sorted leaderboard would be meaningless. */}
+            {hover.data.filter(d => enabled[d.vector.id]).map(d => (
+              <div key={d.vector.id} className="flex items-center justify-between gap-3">
+                <span style={{ color: d.vector.color }}>
+                  {d.vector.name}{d.vector.affliction ? ' ▲' : ''}
+                </span>
+                <span className="text-[#d8d8e8]">{(d.value * 100).toFixed(0)}%</span>
+              </div>
+            ))}
+            <div className="text-[9px] text-[#6d6d88] mt-1.5 border-t border-white/10 pt-1 leading-snug">
+              % is of each line's own lifetime peak — not comparable between
+              domains. ▲ = a pressure line (higher = more testing).
+            </div>
           </div>
         )}
       </div>
@@ -246,7 +274,7 @@ export default function LifeVectors() {
         <div className="fixed inset-0 z-40" onClick={() => setInfo(null)}>
           <div
             className="absolute bg-[#0c0c18] border border-white/15 rounded-md shadow-2xl p-4 max-w-[320px]"
-            style={{ left: Math.min(info.x, window.innerWidth - 340), top: Math.min(info.y, window.innerHeight - 180) }}
+            style={{ left: Math.max(8, Math.min(info.x, window.innerWidth - 340)), top: Math.max(8, Math.min(info.y, window.innerHeight - 180)) }}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 mb-2">
