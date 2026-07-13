@@ -9,7 +9,7 @@
 // retrograde — it's our reference frame). So bisection is monotonic over
 // any interval not crossing 360°→0° unless we wrap-aware the diff.
 
-import { longitudesAtDate, dateToJD, isSwissReady, isInSwissRange } from '../../astro/ephemeris.js';
+import { longitudesAtDate, dateToJD, isSwissReady } from '../../astro/ephemeris.js';
 import { SOLAR_TERMS } from './data.js';
 
 const MS_DAY = 86400000;
@@ -62,7 +62,13 @@ export function findSolarTermJD(targetSunLon, aroundJD) {
   // Bracket ±5 days.
   const lo = estJD - 5;
   const hi = estJD + 5;
-  if (!isInSwissRange(lo) || !isInSwissRange(hi)) return null;
+  // No isInSwissRange guard here: the Sun longitude comes from longitudesAtDate,
+  // which supplies the accurate Meeus of-date Sun (good to a few arcsec over
+  // millennia) whether or not the JD is inside the Swiss data window. This lets
+  // the year/month pillars — and forward luck pillars — resolve at and just
+  // beyond the 1200-2399 CE edges (a birth in the first weeks of 1200, or after
+  // late 2399) instead of returning a blank chart. The day/hour pillars are
+  // JDN-based and were never range-limited.
   return bisectSunCrossing(lo, hi, targetSunLon);
 }
 

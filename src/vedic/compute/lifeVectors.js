@@ -264,6 +264,14 @@ export function lifeVectorSeriesVedic({ chart, startYear, endYear, samplesPerYea
   // through `|| fill(25)` and feed NaN into savFactor. 25 = neutral bindu.
   const sav = (Array.isArray(chart.ashtakavarga?.sav) && chart.ashtakavarga.sav.length === 12)
     ? chart.ashtakavarga.sav : new Array(12).fill(25);
+  // Per-planet Bhinna Aṣṭakavarga (each graha's own bindus per sign, 0..8).
+  // Classical gochara-through-aṣṭakavarga judges a transit by the TRANSITING
+  // graha's own BAV in the sign it occupies — Jupiter's transit read from
+  // Jupiter's BAV, Saturn's from Saturn's — not the pooled SAV (which would give
+  // every slow transit through a sign the identical modifier). Rāhu/Ketu have no
+  // BAV, so they fall back to SAV.
+  const bav = (chart.ashtakavarga && typeof chart.ashtakavarga.bav === 'object')
+    ? chart.ashtakavarga.bav : null;
   const relevance = buildRelevanceTable(chart);
 
   // Pre-resolve domain house-signs.
@@ -294,6 +302,18 @@ export function lifeVectorSeriesVedic({ chart, startYear, endYear, samplesPerYea
     const v = Number(sav?.[signIdx]);
     const b = Number.isFinite(v) ? v : 25;
     return 0.7 + (Math.min(40, Math.max(0, b)) / 40) * 0.6;
+  };
+
+  // BAV → magnitude modulation for one transiting graha. Maps that graha's own
+  // bindus in the sign (0..8, 4 = neutral) to the same ~0.7..1.3 band as
+  // savFactor. Falls back to SAV when the graha has no BAV row (Rāhu/Ketu) or
+  // the table is malformed.
+  const bavFactor = (planet, signIdx) => {
+    const row = bav?.[planet];
+    if (!Array.isArray(row) || row.length !== 12) return savFactor(signIdx);
+    const v = Number(row[signIdx]);
+    const b = Number.isFinite(v) ? v : 4;
+    return 0.7 + (Math.min(8, Math.max(0, b)) / 8) * 0.6;
   };
 
   for (let t = 0; t < numSamples; t++) {
@@ -359,7 +379,7 @@ export function lifeVectorSeriesVedic({ chart, startYear, endYear, samplesPerYea
             const asp = housesAspectedBy(T, tSign);                    // aspecting the bhāva
             if (asp.some(s => domainSigns[d.id].has(s))) base = 0.4;
           }
-          if (base > 0) g += base * TRANSIT_WEIGHT[T] * savFactor(tSign);
+          if (base > 0) g += base * TRANSIT_WEIGHT[T] * bavFactor(T, tSign);
         }
         // Sade Sati intensifies the Self & Health lines.
         if (inSadeSati && (d.id === 'self' || d.id === 'health')) g += 0.6;
@@ -370,8 +390,8 @@ export function lifeVectorSeriesVedic({ chart, startYear, endYear, samplesPerYea
       // Jupiter's blessing — in a kendra/trikona from Lagna, or 2/5/9/11 from Moon.
       const jHL = transitSign.Jupiter != null ? ((transitSign.Jupiter - lagna + 12) % 12) + 1 : null;
       const jHM = transitSign.Jupiter != null ? ((transitSign.Jupiter - moonSign + 12) % 12) + 1 : null;
-      if (jHL && (KENDRAS.has(jHL) || TRIKONAS.has(jHL))) shubha += 0.5 * savFactor(transitSign.Jupiter);
-      if (jHM && [2,5,9,11].includes(jHM))                shubha += 0.4 * savFactor(transitSign.Jupiter);
+      if (jHL && (KENDRAS.has(jHL) || TRIKONAS.has(jHL))) shubha += 0.5 * bavFactor('Jupiter', transitSign.Jupiter);
+      if (jHM && [2,5,9,11].includes(jHM))                shubha += 0.4 * bavFactor('Jupiter', transitSign.Jupiter);
       // Saturn's pressure — Sade Sati, or in a dusthāna from Lagna.
       const sHL = transitSign.Saturn != null ? ((transitSign.Saturn - lagna + 12) % 12) + 1 : null;
       if (inSadeSati)                 ashubha += 0.8;

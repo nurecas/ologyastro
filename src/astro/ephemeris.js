@@ -305,6 +305,19 @@ const AYANAMSA_ID = {
   fagan_bradley: 0, // SE_SIDM_FAGAN_BRADLEY
 };
 
+// Ayanāṁśa (tropical − sidereal) at J2000, captured from Swiss for each mode.
+// Used ONLY on the Standish fallback so sidereal charts aren't rendered ~24°
+// off. Because the accumulated precession that grows the ayanāṁśa is the same
+// term that carries a J2000-frame longitude to of-date (see
+// generalPrecessionDeg), the of-date value = this J2000 value + precession.
+const AYANAMSA_J2000 = {
+  lahiri:        23.85322,
+  kp:            23.75637,
+  raman:         22.40692,
+  truecitra:     23.83615,
+  fagan_bradley: 24.73643,
+};
+
 let _activeZodiac   = 'tropical';    // 'tropical' | 'sidereal'
 let _activeAyanamsa = 'lahiri';      // one of the keys above
 let _sidModeSetTo   = null;          // cache: last-set SIDM to avoid redundant ccalls
@@ -512,21 +525,46 @@ function eclipticPosSwiss(jd) {
   return out;
 }
 
+// Accumulated general precession in longitude from J2000 (degrees) — carries a
+// J2000-mean-ecliptic longitude to the mean ecliptic OF DATE. IAU 2006
+// (Capitaine et al.) leading terms; good to a few arcsec over ±12 centuries,
+// far inside the Standish fallback's own ~0.3-3° accuracy. Validated against
+// Swiss: with this term the fallback's Mars residual is ~0° at every epoch
+// (the remaining Jupiter/Saturn drift is Standish's own great-inequality
+// limitation, not precession).
+function generalPrecessionDeg(jd) {
+  const T = (jd - 2451545.0) / 36525.0;
+  return (5028.796195 * T + 1.1054348 * T * T) / 3600;
+}
+
 // Standish+Meeus longitude table — the original implementation, now extracted
 // so both backends can be exercised from tests.
+//
+// The 8 planets are computed in the J2000 mean-ecliptic frame; the Sun and Moon
+// (Meeus) are already of-date. We add general precession to the planets so all
+// ten bodies share one of-date tropical frame (previously the planets lagged
+// the of-date Sun/Moon by up to ~11° at 1200 CE). In sidereal mode we then
+// subtract the of-date ayanāṁśa from all ten so a fallback Vedic chart is
+// sidereal rather than silently tropical (~24° off).
 function longitudesStandish(jd) {
-  return {
+  const prec = generalPrecessionDeg(jd);
+  const out = {
     Sun:     sunGeoLongitudeDeg(jd),
     Moon:    moonGeoLongitudeDeg(jd),
-    Mercury: planetGeoLongitudeDeg('Mercury', jd),
-    Venus:   planetGeoLongitudeDeg('Venus', jd),
-    Mars:    planetGeoLongitudeDeg('Mars', jd),
-    Jupiter: planetGeoLongitudeDeg('Jupiter', jd),
-    Saturn:  planetGeoLongitudeDeg('Saturn', jd),
-    Uranus:  planetGeoLongitudeDeg('Uranus', jd),
-    Neptune: planetGeoLongitudeDeg('Neptune', jd),
-    Pluto:   planetGeoLongitudeDeg('Pluto', jd),
+    Mercury: planetGeoLongitudeDeg('Mercury', jd) + prec,
+    Venus:   planetGeoLongitudeDeg('Venus', jd) + prec,
+    Mars:    planetGeoLongitudeDeg('Mars', jd) + prec,
+    Jupiter: planetGeoLongitudeDeg('Jupiter', jd) + prec,
+    Saturn:  planetGeoLongitudeDeg('Saturn', jd) + prec,
+    Uranus:  planetGeoLongitudeDeg('Uranus', jd) + prec,
+    Neptune: planetGeoLongitudeDeg('Neptune', jd) + prec,
+    Pluto:   planetGeoLongitudeDeg('Pluto', jd) + prec,
   };
+  const ayan = _activeZodiac === 'sidereal'
+    ? (AYANAMSA_J2000[_activeAyanamsa] ?? AYANAMSA_J2000.lahiri) + prec
+    : 0;
+  for (const k in out) out[k] = norm360(out[k] - ayan);
+  return out;
 }
 
 // -----------------------------------------------------------------------------

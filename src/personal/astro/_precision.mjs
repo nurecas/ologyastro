@@ -19,6 +19,7 @@ import { analyzeChart, elementDistribution, modeDistribution, grandTrines, tSqua
 import { lifeVectorSeries, currentAspects, majorLifeEvents } from './aspects.js';
 import { forecastEvents } from './forecast.js';
 import { planetaryHourAt } from './planetaryHours.js';
+import { activatedMidpoints } from './midpoints.js';
 import { astrocartographyLines } from '../../astro/astrocartography.js';
 import { crossAspects, compositeChart, compatibilityHighlights, synastrySummary } from './synastry.js';
 import { offsetMinutesForZoneAt } from './geocode.js';
@@ -547,6 +548,29 @@ head('10. Planetary hours across the UTC-day boundary');
 }
 
 // -----------------------------------------------------------------------------
+head('11. Midpoints — Ebertin 90° dial (square/opposition, not only conjunction)');
+{
+  // Synthetic chart: Sun 10°, Moon 50° ⇒ Sun/Moon midpoint = 30°. Put Mars at
+  // 120° (square: 30+90) and Mercury at 210° (opposition: 30+180). A 90° dial
+  // must flag both; the old direct-conjunction-only test flagged neither.
+  const chart = {
+    ascDeg: 0, mcDeg: 270,
+    planets: [
+      { name: 'Sun', lonDeg: 10 }, { name: 'Moon', lonDeg: 50 },
+      { name: 'Mercury', lonDeg: 210 }, { name: 'Venus', lonDeg: 300 },
+      { name: 'Mars', lonDeg: 120 }, { name: 'Jupiter', lonDeg: 175 },
+      { name: 'Saturn', lonDeg: 88 }, { name: 'Uranus', lonDeg: 5 },
+      { name: 'Neptune', lonDeg: 265 }, { name: 'Pluto', lonDeg: 333 },
+    ],
+  };
+  const acts = activatedMidpoints(chart, 1.5);
+  const sm = acts.filter(a => a.pair === 'Sun/Moon');
+  const byActivator = Object.fromEntries(sm.map(a => [a.activator, a.aspect]));
+  assert(byActivator.Mars === 'square', `Sun/Moon midpoint square by Mars detected (got ${byActivator.Mars})`);
+  assert(byActivator.Mercury === 'opposition', `Sun/Moon midpoint opposition by Mercury detected (got ${byActivator.Mercury})`);
+  assert(acts.every(a => a.orb <= 1.5), 'all dial contacts within the 1.5° orb');
+}
+
 console.log(`\n${'─'.repeat(48)}`);
 console.log(`  ${passed} passed · ${failed} failed`);
 if (failed) {

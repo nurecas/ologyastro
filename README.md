@@ -150,7 +150,7 @@ re-entrant calls don't loop the chart store.
 
 ### Testing
 
-- **847** Node-side assertions across eight `src/**/_*.mjs` suites
+- **1022** Node-side assertions across eight `src/**/_*.mjs` suites
   (astro sanity; personal accuracy / precision / Swiss precision;
   Vedic precision / life-vectors; Chinese precision; gematria precision).
 - **~90** in-browser assertions in the Phase-7 test mode —

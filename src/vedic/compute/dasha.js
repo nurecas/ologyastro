@@ -110,7 +110,13 @@ export function currentAntar(maha, atDate) {
 // Identify the running mahadasha within a sequence at a given moment.
 export function currentMaha(sequence, atDate) {
   const ms = atDate.getTime();
-  return sequence.find(m => m.start.getTime() <= ms && m.end.getTime() > ms) || sequence[0];
+  const found = sequence.find(m => m.start.getTime() <= ms && m.end.getTime() > ms);
+  if (found) return found;
+  // Out of coverage: clamp to the nearest end of the sequence rather than
+  // snapping back to the BIRTH mahādaśā (the old `|| sequence[0]` made a date
+  // PAST coverage resolve to the natal lord). Before the run → first; after it
+  // → last. Never null, so callers reading `.lord` stay safe.
+  return ms < sequence[0].start.getTime() ? sequence[0] : sequence[sequence.length - 1];
 }
 
 // Pratyantar (level-3 sub-sub period) inside a single antardasha.

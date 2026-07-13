@@ -506,6 +506,24 @@ console.log('\n\u2500\u2500 24b. Timezone + ecliptic-latitude regressions \u2500
     `Pluto Dec includes ecliptic latitude (\u0394 vs \u03b2=0 = ${((plu.dec - decBeta0) * 180 / Math.PI).toFixed(2)}\u00b0)`);
 }
 
+console.log('\n\u2500\u2500 24c. Standish fallback: precession-to-date + sidereal ayanamsa \u2500\u2500');
+{
+  const { longitudesAtDateStandish, longitudesAtDate, setEphemerisOptions } = await import('../../astro/ephemeris.js');
+  const d = new Date(Date.UTC(1600, 5, 15, 12, 0));
+  setEphemerisOptions({ zodiac: 'tropical' });
+  const stT = longitudesAtDateStandish(d), swT = longitudesAtDate(d);
+  // Precession carries the J2000-frame planets to of-date; Mars (accurate
+  // orbital theory) then matches Swiss tropical to well under 1\u00b0 at 1600 CE
+  // (it was ~5-6\u00b0 off before the precession term).
+  assert(Math.abs(signedDelta(stT.Mars, swT.Mars)) < 0.3,
+    `Standish Mars is of-date vs Swiss tropical at 1600 CE (|\u0394|=${Math.abs(signedDelta(stT.Mars, swT.Mars)).toFixed(2)}\u00b0)`);
+  setEphemerisOptions({ zodiac: 'sidereal', ayanamsa: 'lahiri' });
+  const stS = longitudesAtDateStandish(d), swS = longitudesAtDate(d);
+  assert(Math.abs(signedDelta(stS.Sun, swS.Sun)) < 0.3,
+    `sidereal fallback Sun \u2248 Swiss sidereal, not ~24\u00b0 off (|\u0394|=${Math.abs(signedDelta(stS.Sun, swS.Sun)).toFixed(2)}\u00b0)`);
+  setEphemerisOptions({ zodiac: 'tropical' }); // restore default for later sections
+}
+
 console.log('\n\u2500\u2500 25. Davison chart (midpoint in time + space) \u2500\u2500');
 const { davisonBirth, davisonChart } = await import('../../personal/astro/davison.js');
 const partnerB = {

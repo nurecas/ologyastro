@@ -14,7 +14,7 @@ import { SYSTEMS, systemUrl } from '../systems.js';
 export default function SystemNav({ activeId }) {
   const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
   return (
-    <div className="flex items-center gap-2 px-3 sm:px-6 py-2 border-b border-white/5 bg-[#0a0a14]/60">
+    <div className="flex items-center gap-2 px-3 sm:px-6 py-2 border-b border-white/5 bg-[#0a0a14]/60 w-full max-w-full overflow-hidden">
       {/* OLOGY logo — leftmost, clickable, takes the user to the site root. */}
       <a
         href={base}
@@ -23,8 +23,10 @@ export default function SystemNav({ activeId }) {
       >
         OLOGY
       </a>
-      {/* System pills — horizontally scrollable on narrow screens. */}
-      <div className="flex items-center gap-1.5 text-[10px] sm:text-[10.5px] tracking-[0.18em] sm:tracking-[0.22em] uppercase overflow-x-auto no-scrollbar -mx-1 px-1">
+      {/* System pills — horizontally scrollable on narrow screens. min-w-0 lets
+          this flex child shrink below its content width so overflow-x-auto can
+          actually scroll it, instead of forcing the whole bar past the viewport. */}
+      <div className="flex items-center gap-1.5 text-[10px] sm:text-[10.5px] tracking-[0.18em] sm:tracking-[0.22em] uppercase overflow-x-auto no-scrollbar min-w-0 flex-1 -mx-1 px-1">
         {SYSTEMS.filter(s => s.enabled || s.id === activeId).map(s => {
           const active = s.id === activeId;
           const cls = active

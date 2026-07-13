@@ -70,11 +70,11 @@ visible breadcrumb).
 
 | Suite | Assertions | What it covers |
 |---|---|---|
-| `src/personal/astro/_precision.mjs` | 170 | Standish + chart analysis + life vectors + forecast + synastry + timezones + major-life-events (conj/opp) + planetary-hours UTC-boundary |
-| `src/personal/astro/_swiss_precision.mjs` | 285 | Swiss WASM port-fidelity at 10 epochs + range guards + extras + fixed stars + return timezone + ACG ecliptic latitude |
+| `src/personal/astro/_precision.mjs` | 173 | Standish + chart analysis + life vectors + forecast + synastry + timezones + major-life-events (conj/opp) + planetary-hours UTC-boundary + midpoint 90° dial |
+| `src/personal/astro/_swiss_precision.mjs` | 287 | Swiss WASM port-fidelity at 10 epochs + range guards + extras + fixed stars + return timezone + ACG ecliptic latitude + Standish precession/sidereal fallback |
 | `src/gematria/_precision.mjs` | 13 | Canonical letter values + accented-Greek NFD + full equivalent-corpus integrity |
 | `src/vedic/_precision.mjs` | 158 | All 11 yoga detectors + doshas + drishti + argala + ashtakavarga (BPHS bindu totals 48/49/39/54/56/52/39, SAV 337) + Vimshottari + 16 vargas + sambandha + Arudha + panchang |
-| `src/chinese/_precision.mjs` | 291 | Stems × branches × elements × sexagenary cycle, day-pillar 1900-01-01 = 甲戌 anchor, Five Tigers + Five Mice, Ten Gods exhaustive for two day masters, hidden stems, luck direction |
+| `src/chinese/_precision.mjs` | 296 | Stems × branches × elements × sexagenary cycle, day-pillar 1900-01-01 = 甲戌 anchor, Five Tigers + Five Mice, Ten Gods exhaustive for two day masters, hidden stems, luck direction, Swiss solar-term range-edge charts |
 | **Total** | **892** | All green |
 
 ### Section A — Vedic deferred topics (Phase 2 → Phase 3)
