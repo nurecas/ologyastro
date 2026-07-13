@@ -16,8 +16,9 @@
 import { computeNatal } from './natal.js';
 import { longitudesAtDate, dateToJD, gmst, obliquity, mcLongitudeRad, eclipticToEquatorial, PLANETS } from '../../astro/ephemeris.js';
 import { analyzeChart, elementDistribution, modeDistribution, grandTrines, tSquares, grandCrosses, stelliums, chartShape } from './chartAnalysis.js';
-import { lifeVectorSeries, currentAspects } from './aspects.js';
+import { lifeVectorSeries, currentAspects, majorLifeEvents } from './aspects.js';
 import { forecastEvents } from './forecast.js';
+import { planetaryHourAt } from './planetaryHours.js';
 import { astrocartographyLines } from '../../astro/astrocartography.js';
 import { crossAspects, compositeChart, compatibilityHighlights, synastrySummary } from './synastry.js';
 import { offsetMinutesForZoneAt } from './geocode.js';
@@ -512,6 +513,37 @@ head('8c. Timezone offset for historical dates');
   const d = new Date('1850-06-15T12:00:00Z');
   const off = offsetMinutesForZoneAt('Europe/London', d);
   assert(Number.isFinite(off), `Historical London 1850: offset is finite (got ${off})`);
+}
+
+head('9. Major life events — conjunctions & oppositions are detected');
+{
+  // Regression: the old sign-change-of-(dist−angle) detector could never fire
+  // for angle 0 (conjunction) or 180 (opposition) because the folded distance
+  // is bounded there — so Saturn returns and Uranus oppositions never showed.
+  const chart = computeNatal({ name: 'MLE', year: 1990, month: 6, day: 15, hour: 12, minute: 0, tzOffsetMin: 0, latDeg: 40, lonDeg: -74, timeKnown: true });
+  const events = majorLifeEvents({ natal: chart, startYear: 1990, endYear: 2090 });
+  const kinds = new Set(events.map(e => e.aspect.name));
+  assert(kinds.has('Conjunction'), 'majorLifeEvents detects conjunctions');
+  assert(kinds.has('Opposition'), 'majorLifeEvents detects oppositions');
+  const satReturn = events.some(e => e.transit === 'Saturn' && e.natal === 'Saturn' && e.aspect.name === 'Conjunction' && e.year >= 2017 && e.year <= 2022);
+  assert(satReturn, 'Saturn return (~age 29) present as a conjunction event');
+  // Inverted/degenerate window must not throw (birth year ≥ 2080 edge case).
+  let threw = false;
+  try { majorLifeEvents({ natal: chart, startYear: 2085, endYear: 2080 }); } catch { threw = true; }
+  assert(!threw, 'majorLifeEvents tolerates an inverted window without throwing');
+}
+
+head('10. Planetary hours across the UTC-day boundary');
+{
+  // Regression: sunrise/sunset were keyed to the UTC day, so a longitude whose
+  // local day straddles UTC midnight got the wrong day/night phase and an
+  // out-of-range hour index (negative or >11).
+  const la = planetaryHourAt(new Date('2025-01-16T00:00:00Z'), 34.05, -118.24);   // 16:05 local (day)
+  assert(la && la.phase === 'day', 'LA afternoon reads as a day hour');
+  assert(la && la.index >= 0 && la.index <= 11, `LA hour index in 0..11 (got ${la && la.index})`);
+  const syd = planetaryHourAt(new Date('2025-06-15T22:00:00Z'), -33.87, 151.21);  // 08:00 local (day)
+  assert(syd && syd.phase === 'day', 'Sydney morning reads as a day hour');
+  assert(syd && syd.index >= 0 && syd.index <= 11, `Sydney hour index in 0..11 (got ${syd && syd.index})`);
 }
 
 // -----------------------------------------------------------------------------

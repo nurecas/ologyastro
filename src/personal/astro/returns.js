@@ -14,6 +14,7 @@
 // -----------------------------------------------------------------------------
 
 import { dateToJD, longitudesAtDate, extraLongitudesAtDate } from '../../astro/ephemeris.js';
+import { birthToUTCDate } from './natal.js';
 
 function norm360(x) { return ((x % 360) + 360) % 360; }
 function signedDelta(a, b) {
@@ -47,7 +48,11 @@ function findLongitudeCrossing(name, targetLon, seedDate, speedHint) {
 // Returns a Date in UT plus the full return chart planet set.
 export function solarReturn(birth, year) {
   const natalSunDate = new Date(Date.UTC(year, birth.month - 1, birth.day, birth.hour, birth.minute));
-  const natalSun = longitudesAtDate(new Date(Date.UTC(birth.year, birth.month - 1, birth.day, birth.hour, birth.minute))).Sun;
+  // Natal target must be the TRUE UTC birth instant (tz-corrected), matching
+  // the displayed natal chart — not the local clock read as UTC. Otherwise the
+  // return is cast against a wrong natal Sun and lands hours off, with its Sun
+  // not actually on the natal Sun.
+  const natalSun = longitudesAtDate(birthToUTCDate(birth)).Sun;
   const jd = findLongitudeCrossing('Sun', natalSun, natalSunDate, 1);  // Sun ~1°/day
   const date = jdToUTCDate(jd);
   const lons = longitudesAtDate(date);
@@ -58,7 +63,7 @@ export function solarReturn(birth, year) {
 // Lunar Return nearest to `seedDate`. The Moon completes one lunar cycle
 // (~27.3 days) so we find the Moon-at-natal-position closest to the seed.
 export function lunarReturnNear(birth, seedDate) {
-  const natalMoon = longitudesAtDate(new Date(Date.UTC(birth.year, birth.month - 1, birth.day, birth.hour, birth.minute))).Moon;
+  const natalMoon = longitudesAtDate(birthToUTCDate(birth)).Moon;   // tz-corrected — see solarReturn
   // Seed with Moon speed hint ~13.18 deg/day.
   const jd = findLongitudeCrossing('Moon', natalMoon, seedDate, 13.18);
   const date = jdToUTCDate(jd);

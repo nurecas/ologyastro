@@ -46,14 +46,21 @@ function nakshatraOf(lonDeg) {
 function dignityOf(planet, lonDeg) {
   const sign = signOf(lonDeg);
   const within = norm360(lonDeg) - sign * 30;
+  // Exaltation is tested BEFORE own-sign: for the one planet whose exaltation
+  // sign is also its own sign (Mercury in Virgo), checking own first would
+  // mislabel the deepest-uccha degree as 'own'/'mooltrikona' and score it
+  // WEAKER than the adjacent mooltrikona band — an inversion. Exaltation wins
+  // the whole sign. (No regression for others: a planet's exaltation sign is
+  // never also its own sign except Mercury/Virgo, and Moon/Taurus already
+  // resolved to 'exalted' under the old order.)
+  const ex = EXALT[planet];
+  if (ex && ex.sign === sign) return 'exalted';
   const owns = OWN_SIGN[planet] || [];
   if (owns.includes(sign)) {
     const mt = MOOLTRIKONA[planet];
     if (mt && mt.sign === sign && within >= mt.from && within <= mt.to) return 'mooltrikona';
     return 'own';
   }
-  const ex = EXALT[planet];
-  if (ex && ex.sign === sign) return 'exalted';
   const de = DEBIL[planet];
   if (de && de.sign === sign) return 'debilitated';
   return 'neutral';

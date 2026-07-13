@@ -144,6 +144,20 @@ section('Determinism + window fidelity');
   ok(identical, 'same chart twice → identical series (deterministic, no Date.now/random)');
 }
 
+section('Mercury-in-Virgo dignity — feeds strengthMultiplier');
+{
+  // Regression: dignityOf checked own-sign before exaltation, and Virgo is
+  // both Mercury's own AND exaltation sign, so Mercury-in-Virgo scored 'own'
+  // (×1.20) — under-scaling every Mercury-linked domain by ~11% — with the
+  // deepest-uccha degree landing weaker than the adjacent mooltrikona band.
+  const mv = computeVedicChart(
+    { name: 'MV', year: 1985, month: 9, day: 20, hour: 6, minute: 0, tzOffsetMin: 330, latDeg: 28.6139, lonDeg: 77.2090, placeName: 'Delhi' },
+    { ayanamsa: 'lahiri' });
+  const merc = mv.planets.find(p => p.name === 'Mercury');
+  ok(merc.signIdx === 5, `Mercury sits in sidereal Virgo (got sign ${merc.signIdx})`);
+  ok(merc.dignity === 'exalted', `Mercury in Virgo reads 'exalted', not 'own' (got '${merc.dignity}')`);
+}
+
 console.log(`\n──────────────────────────────────────`);
 console.log(`  ${PASS} passed · ${FAIL} failed`);
 if (FAIL) for (const m of FAILS) console.log('  ✗', m);

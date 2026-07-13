@@ -131,7 +131,14 @@ export function computeEnglish(text) {
 }
 
 export function computeGreek(text) {
-  const t = (text || '').replace(/[^\u0370-\u03FF\u1F00-\u1FFF]/g, '');
+  // Decompose polytonic (accented) Greek to base letter + combining marks,
+  // strip the marks, then keep only the base Greek block. Without this, a
+  // precomposed vowel like \u1FE6 or \u1F38 has no key in GRK_STD and silently scores
+  // 0, so any accented word (the normal way Greek is written) under-counts.
+  const t = (text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036F]/g, '')
+    .replace(/[^\u0370-\u03FF]/g, '');
   return [
     { name: 'Isopsephy', alt: 'Arithmos', value: sumByMap(t, GRK_STD),
       desc: 'Standard Greek numerical values, including archaic ϛ (6), ϟ (90), ϡ (900).',

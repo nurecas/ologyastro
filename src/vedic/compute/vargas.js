@@ -208,8 +208,9 @@ export function computeVarga(chart, divisor) {
 import { OWN_SIGN, EXALT, DEBIL } from './data.js';
 function vargaDignity(planet, signIdx) {
   if (['Rahu','Ketu'].includes(planet)) return null;
-  if (OWN_SIGN[planet]?.includes(signIdx)) return 'own';
+  // Exaltation before own-sign (Mercury/Virgo overlap — see dignityOf in chart.js).
   if (EXALT[planet]?.sign === signIdx)     return 'exalted';
+  if (OWN_SIGN[planet]?.includes(signIdx)) return 'own';
   if (DEBIL[planet]?.sign === signIdx)     return 'debilitated';
   return 'neutral';
 }

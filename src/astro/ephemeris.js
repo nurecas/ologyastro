@@ -496,6 +496,22 @@ function longitudesSwiss(jd) {
   return out;
 }
 
+// Swiss-backed ecliptic { lon, lat } (both degrees) for a given JD (UT). Same
+// preconditions as longitudesSwiss. Keeps the latitude (r[1]) that the
+// longitude-only table discards — needed for correct RA/Dec (astrocartography),
+// where dropping β displaces a high-latitude body's line by hundreds of km.
+function eclipticPosSwiss(jd) {
+  const swe = _swissInstance;
+  const ids = _swissIds(swe);
+  const flag = swe.SEFLG_SWIEPH | _applySiderealFlag();
+  const out = {};
+  for (const name of PLANETS) {
+    const r = swe.calc_ut(jd, ids[name], flag);
+    out[name] = { lon: norm360(r[0]), lat: r[1] };
+  }
+  return out;
+}
+
 // Standish+Meeus longitude table — the original implementation, now extracted
 // so both backends can be exercised from tests.
 function longitudesStandish(jd) {
@@ -707,10 +723,21 @@ export function gmst(jd) {
 // Returns [{name, ra, dec}] with ra, dec in radians.
 export function equatorialAtDate(date) {
   const jd = dateToJD(date);
-  const L  = longitudesAtDate(date);
+  if (_swissReady && isInSwissRange(jd)) {
+    // Use the true ecliptic latitude β from Swiss — correct in-mundo RA/Dec.
+    const pos = eclipticPosSwiss(jd);
+    return PLANETS.map(name => ({
+      name,
+      ...eclipticToEquatorial(pos[name].lon, pos[name].lat, jd),
+    }));
+  }
+  // Standish fallback: geocentric ecliptic latitude isn't readily available
+  // (the heliocentric z is discarded upstream), so retain the β=0 approximation
+  // — consistent with the fallback's already-degraded (~1°+) longitudes.
+  const L = longitudesAtDate(date);
   return PLANETS.map(name => ({
     name,
-    ...eclipticToEquatorial(L[name], 0, jd), // β=0 approximation
+    ...eclipticToEquatorial(L[name], 0, jd),
   }));
 }
 

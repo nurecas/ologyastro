@@ -95,55 +95,25 @@ export function placidusCusps(ramcRad, epsRad, latRad) {
   cusps[4]  = IC;
   cusps[7]  = DSC;
 
-  // For intermediate cusp (house number h ∈ {11, 12, 2, 3}), the formula:
-  //   Let F = fraction of semi-arc (1/3 or 2/3 depending on the cusp)
-  //   Find RA such that   sin(δ(RA)) = sin(ε)·sin(RA − ramcΔ)
-  //   converges. We iterate.
+  // Intermediate cusps by PORPHYRY trisection of each quadrant between the
+  // (correct) angles. This is the standard no-Swiss fallback for a quadrant
+  // house system: exact on the angles, and a close approximation of Placidus
+  // in between at non-polar latitudes.
   //
-  // Standard form from Meeus / Pottenger: for cusp i,
-  //   angle = RAMC + fraction · π/2 (east half) or RAMC − ...
-  // then solve  tan(λ) = (sin θ_H) / (cos θ_H · cos ε − tan φ · sin ε · F)
-  // where θ_H is the cusp's right ascension hypothesis.
-
-  const solveCusp = (H, F) => {
-    // H = hour-angle offset from MC in radians (positive east, negative west)
-    // F = fraction (−1 for above-horizon houses, +1 for below-horizon)
-    // Iterate on RA.
-    let ra = ramcRad + H;
-    for (let it = 0; it < 12; it++) {
-      // tan(decl_assumed) = sin(ra) · tan(ε)  (ecliptic point on horizon band)
-      const dec = Math.atan(Math.sin(ra - ramcRad) * Math.tan(epsRad));
-      // semi-arc condition:  cos(HA) = −tan(φ)·tan(δ) · F
-      // where HA is distance from meridian, and F=1 for below-horizon semi.
-      const argSA = -Math.tan(latRad) * Math.tan(dec);
-      if (Math.abs(argSA) >= 1) break; // never rises/sets at this lat
-      const SA = Math.acos(argSA); // semi-arc
-      // New RA estimate:
-      const newRa = ramcRad + H * (SA / (Math.PI / 2));
-      if (Math.abs(newRa - ra) < 1e-7) { ra = newRa; break; }
-      ra = newRa;
-    }
-    // Convert RA (equator) + assumed ecliptic latitude 0 to ecliptic lon:
-    //   tan(λ) = tan(ra) / cos(ε)  (for β = 0)
-    return norm2pi(Math.atan2(Math.sin(ra), Math.cos(ra) * Math.cos(epsRad)));
+  // (The previous semi-arc solver mis-fired: its `F` sign parameter — the
+  // above/below-horizon selector — was declared but never used in the body,
+  // so cusps 2/3/11/12 all ran the identical equator-only diurnal formula and
+  // landed up to ~20° off sub-tropically, enough to misplace a planet by a
+  // whole house. True Placidus semi-arc cusps come from the Swiss path when
+  // it is available; this fallback only serves the Standish/out-of-range path.)
+  const third = (from, to) => {
+    const arc = norm2pi(to - from);
+    return [norm2pi(from + arc / 3), norm2pi(from + 2 * arc / 3)];
   };
-
-  // H offsets for the 4 intermediate cusps (from MC, with east = +):
-  //   House 11: east, 1/3 of 90°   →  +30° · F11
-  //   House 12: east, 2/3 of 90°   →  +60° · F12
-  //   House 2:  east of ASC …      which is MC + 120° equivalently
-  //   House 3:  MC + 150°
-  // Below sign conventions follow Hoskings / Astro-Databank.
-  cusps[11] = solveCusp( 1 * Math.PI / 6, +1); // RAMC + 30°
-  cusps[12] = solveCusp( 2 * Math.PI / 6, +1); // RAMC + 60°
-  cusps[2]  = solveCusp( 4 * Math.PI / 6, -1); // RAMC + 120°
-  cusps[3]  = solveCusp( 5 * Math.PI / 6, -1); // RAMC + 150°
-
-  // Opposite houses:
-  cusps[5]  = norm2pi(cusps[11] + Math.PI);
-  cusps[6]  = norm2pi(cusps[12] + Math.PI);
-  cusps[8]  = norm2pi(cusps[2]  + Math.PI);
-  cusps[9]  = norm2pi(cusps[3]  + Math.PI);
+  [cusps[11], cusps[12]] = third(MC,  ASC);  // MC  → ASC quadrant (houses 11, 12)
+  [cusps[2],  cusps[3]]  = third(ASC, IC);   // ASC → IC  quadrant (houses 2, 3)
+  [cusps[5],  cusps[6]]  = third(IC,  DSC);  // IC  → DSC quadrant (houses 5, 6)
+  [cusps[8],  cusps[9]]  = third(DSC, MC);   // DSC → MC  quadrant (houses 8, 9)
 
   return cusps.slice(1).map(r => r * RAD); // houses[0..11] degrees
 }
@@ -179,8 +149,10 @@ export function computeNatal(birth, options = {}) {
     ascRad  = swissHouses.asc * DEG;
     mcRad   = swissHouses.mc  * DEG;
   } else {
-    // Fallback — no Swiss, or out of range. Only Placidus + Equal are
-    // available here; Koch / Whole Sign silently degrade to Placidus.
+    // Fallback — no Swiss, or out of range. placidusCusps() returns exact
+    // angles with Porphyry-trisected intermediate cusps (a close, standard
+    // no-Swiss approximation of Placidus); Equal House if it degenerates
+    // (polar). Koch / Whole Sign have no no-Swiss form and share this path.
     mcRad  = midheavenRad(ramc, eps);
     ascRad = ascendantRad(ramc, eps, phi);
     houses = placidusCusps(ramc, eps, phi);

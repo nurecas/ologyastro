@@ -480,6 +480,32 @@ const lrMoon = lr.planets.Moon;
 const mdiff = Math.abs(signedDelta(lrMoon, lr.natalMoonLon));
 assert(mdiff < 0.02, `Return Moon \u2248 natal Moon (|\u0394| = ${(mdiff * 3600).toFixed(2)}")`);
 
+console.log('\n\u2500\u2500 24b. Timezone + ecliptic-latitude regressions \u2500\u2500');
+{
+  const { longitudesAtDate, equatorialAtDate, eclipticToEquatorial, dateToJD } = await import('../../astro/ephemeris.js');
+  const { birthToUTCDate } = await import('../../personal/astro/natal.js');
+  // Returns must target the TRUE tz-corrected natal Sun/Moon, not the local
+  // clock read as UTC (the previous bug \u2014 self-referential test masked it).
+  const birthIST = { name: 'TZ', year: 1990, month: 6, day: 21, hour: 12, minute: 0, tzOffsetMin: 330, latDeg: 28.6, lonDeg: 77.2, timeKnown: true };
+  const trueSun = longitudesAtDate(birthToUTCDate(birthIST)).Sun;
+  const srTz = solarReturn(birthIST, 2025);
+  assert(Math.abs(signedDelta(srTz.natalSunLon, trueSun)) * 60 < 0.5,
+    `SR natal-Sun target is tz-corrected (|\u0394| = ${(Math.abs(signedDelta(srTz.natalSunLon, trueSun)) * 60).toFixed(3)}')`);
+  assert(Math.abs(signedDelta(longitudesAtDate(srTz.date).Sun, trueSun)) * 60 < 1,
+    `SR Sun sits on the true natal Sun within 1' (|\u0394| = ${(Math.abs(signedDelta(longitudesAtDate(srTz.date).Sun, trueSun)) * 60).toFixed(3)}')`);
+  const trueMoon = longitudesAtDate(birthToUTCDate(birthIST)).Moon;
+  const lrTz = lunarReturnNear(birthIST, new Date(Date.UTC(2025, 5, 21)));
+  assert(Math.abs(signedDelta(lrTz.natalMoonLon, trueMoon)) < 0.02,
+    `LR natal-Moon target is tz-corrected (|\u0394| = ${(Math.abs(signedDelta(lrTz.natalMoonLon, trueMoon)) * 60).toFixed(2)}')`);
+  // Astrocartography RA/Dec must fold in ecliptic latitude (\u03b2\u22600). Pluto's ~16\u00b0
+  // latitude in 1990 moves its declination well away from the \u03b2=0 value.
+  const dLat = new Date(Date.UTC(1990, 2, 15, 12, 30));
+  const plu = equatorialAtDate(dLat).find(e => e.name === 'Pluto');
+  const decBeta0 = eclipticToEquatorial(longitudesAtDate(dLat).Pluto, 0, dateToJD(dLat)).dec;
+  assert(Math.abs((plu.dec - decBeta0) * 180 / Math.PI) > 5,
+    `Pluto Dec includes ecliptic latitude (\u0394 vs \u03b2=0 = ${((plu.dec - decBeta0) * 180 / Math.PI).toFixed(2)}\u00b0)`);
+}
+
 console.log('\n\u2500\u2500 25. Davison chart (midpoint in time + space) \u2500\u2500');
 const { davisonBirth, davisonChart } = await import('../../personal/astro/davison.js');
 const partnerB = {

@@ -263,45 +263,44 @@ function boxcarSmooth(arr, radius) {
 // transit planet (Jupiter..Pluto) makes an exact conjunction/opposition/
 // square/trine with a natal body. Useful for a "Life Phase" ribbon.
 export function majorLifeEvents({ natal, startYear, endYear }) {
-  const P = PLANETS.length;
   const slow = ['Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
-  const slowIdx = slow.map(s => PLANETS.indexOf(s));
   const events = [];
 
-  // Sample daily for precision; track sign change of (angular diff − aspect).
-  const samplesPerYear = 12; // monthly is enough to bracket and then refine
+  // Monthly sampling brackets every slow-transit aspect; each hit is then
+  // located as a LOCAL MINIMUM of the absolute orb |angDist − aspect.angle|
+  // and refined with a parabolic fit. (The previous sign-change-of-(dist−angle)
+  // detector structurally missed conjunctions and oppositions: the folded
+  // angular distance is bounded at 0 / 180, so dist−angle never changes sign
+  // for angle 0 or 180 — Saturn returns and Uranus oppositions never fired.
+  // The minimum-of-orb handles all five aspects uniformly, matching forecast.js.)
+  const samplesPerYear = 12;
   const N = Math.round((endYear - startYear) * samplesPerYear);
+  if (N < 3) return events; // degenerate/inverted window (e.g. birth year ≥ 2080)
+
   const cache = new Array(N + 1);
   for (let t = 0; t <= N; t++) {
     const yr = startYear + (endYear - startYear) * (t / N);
-    const d  = decimalYearToDate(yr);
-    const L  = longitudesAtDate(d);
-    cache[t] = { yr, L };
+    cache[t] = { yr, L: longitudesAtDate(decimalYearToDate(yr)) };
   }
 
-  for (const tIdx of slowIdx) {
-    const tName = PLANETS[tIdx];
+  for (const tName of slow) {
     for (const np of natal.planets) {
       for (const asp of ASPECTS) {
-        let prevSign = null;
-        let prevDiff = null;
+        // Absolute-orb series for this (transit, natal, aspect) triple.
+        const orbs = new Array(N + 1);
         for (let t = 0; t <= N; t++) {
-          const tLon = cache[t].L[tName];
-          const d = normAbs(tLon - np.lonDeg) - asp.angle;
-          const sign = Math.sign(d);
-          if (prevSign != null && sign !== 0 && sign !== prevSign && Math.abs(d - prevDiff) < 40) {
-            // zero crossing between t-1 and t → interpolate year
-            const frac = prevDiff / (prevDiff - d);
-            const yr = cache[t - 1].yr + (cache[t].yr - cache[t - 1].yr) * frac;
-            events.push({
-              year: yr,
-              transit: tName,
-              natal: np.name,
-              aspect: asp,
-            });
-          }
-          prevSign = sign;
-          prevDiff = d;
+          orbs[t] = Math.abs(normAbs(cache[t].L[tName] - np.lonDeg) - asp.angle);
+        }
+        // Interior local minima that dip inside orb are exact aspect hits.
+        for (let t = 1; t < N; t++) {
+          const a = orbs[t - 1], b = orbs[t], c = orbs[t + 1];
+          if (!(b < a && b < c) || b > asp.orb) continue;
+          const denom = a - 2 * b + c;
+          let frac = Math.abs(denom) > 1e-9 ? (a - c) / (2 * denom) : 0;
+          if (frac < -1) frac = -1; else if (frac > 1) frac = 1;
+          const yr = cache[t].yr + frac * (cache[t].yr - cache[t - 1].yr);
+          if (yr < startYear || yr > endYear) continue;
+          events.push({ year: yr, transit: tName, natal: np.name, aspect: asp });
         }
       }
     }
