@@ -144,6 +144,41 @@ section('Determinism + window fidelity');
   ok(identical, 'same chart twice → identical series (deterministic, no Date.now/random)');
 }
 
+section('Mercury-in-Virgo dignity — feeds strengthMultiplier');
+{
+  // Regression: dignityOf checked own-sign before exaltation, and Virgo is
+  // both Mercury's own AND exaltation sign, so Mercury-in-Virgo scored 'own'
+  // (×1.20) — under-scaling every Mercury-linked domain by ~11% — with the
+  // deepest-uccha degree landing weaker than the adjacent mooltrikona band.
+  const mv = computeVedicChart(
+    { name: 'MV', year: 1985, month: 9, day: 20, hour: 6, minute: 0, tzOffsetMin: 330, latDeg: 28.6139, lonDeg: 77.2090, placeName: 'Delhi' },
+    { ayanamsa: 'lahiri' });
+  const merc = mv.planets.find(p => p.name === 'Mercury');
+  ok(merc.signIdx === 5, `Mercury sits in sidereal Virgo (got sign ${merc.signIdx})`);
+  ok(merc.dignity === 'exalted', `Mercury in Virgo reads 'exalted', not 'own' (got '${merc.dignity}')`);
+}
+
+section('currentMaha clamps out-of-range (regression)');
+{
+  const seq = chart.dasha.sequence;
+  const last = seq[seq.length - 1];
+  const past = new Date(last.end.getTime() + 40 * 365.25 * 86400000);
+  const before = new Date(seq[0].start.getTime() - 5 * 365.25 * 86400000);
+  ok(currentMaha(seq, past) === last, 'past coverage → last maha (not the birth maha)');
+  ok(currentMaha(seq, before) === seq[0], 'before coverage → first maha');
+}
+
+section('BAV gochara path is wired (regression)');
+{
+  ok(chart.ashtakavarga && typeof chart.ashtakavarga.bav === 'object', 'chart.ashtakavarga.bav present (per-planet arrays)');
+  ok(Array.isArray(chart.ashtakavarga.bav.Jupiter) && chart.ashtakavarga.bav.Jupiter.length === 12,
+     'Jupiter BAV is a length-12 sign-indexed array');
+  const s2 = lifeVectorSeriesVedic({ chart, startYear: 1985, endYear: 2065, samplesPerYear: 12 }).series;
+  let finite = true, peak = 0;
+  for (const s of s2) for (const v of s.values) { if (!Number.isFinite(v)) finite = false; if (v > peak) peak = v; }
+  ok(finite && peak > 0.98, `BAV-modulated series finite and peaks ~1 (peak=${peak.toFixed(2)})`);
+}
+
 console.log(`\n──────────────────────────────────────`);
 console.log(`  ${PASS} passed · ${FAIL} failed`);
 if (FAIL) for (const m of FAILS) console.log('  ✗', m);

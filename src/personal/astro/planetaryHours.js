@@ -46,7 +46,12 @@ function sunHourAngle(latRad, decRad) {
 // observer's lat/lon (east-positive). Returns { sunriseJD, sunsetJD,
 // dayLengthHours }.
 export function sunTransitsFor(date, latDeg, lonDeg) {
-  const jd0 = dateToJD(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12)));
+  // Anchor the solar day to the observer's LOCAL civil day, not the UTC day.
+  // A longitude whose local day straddles UTC midnight would otherwise be
+  // handed the neighbouring day's daylight arc — producing a wrong day/night
+  // phase and an out-of-range (negative or >11) hour index.
+  const local = new Date(date.getTime() + lonDeg * 240000); // 240000 ms per ° of longitude (east +)
+  const jd0 = dateToJD(new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), 12)));
   const latRad = latDeg * DEG;
   const dec = sunDec(jd0);
   const H = sunHourAngle(latRad, dec);
@@ -74,29 +79,31 @@ export function planetaryHourAt(date, latDeg, lonDeg) {
   if (tomorrow.sunriseJD == null) return null;
 
   const jdNow = dateToJD(date);
+  // The planetary day runs sunrise→sunrise, so an arc's ruling weekday is the
+  // LOCAL civil day on which its opening sunrise falls (a night arc belongs to
+  // the day of its PRECEDING sunrise). Using the UTC weekday mis-rules charts
+  // whose local day differs from the UTC day.
+  const localDowOfJD = (jd) => new Date((jd - 2440587.5) * 86400000 + lonDeg * 240000).getUTCDay();
   let phase, base, arcLen, dayIndex;
-  // Day-of-week of the current arc is the day on which its sunrise fell
-  // (UT). For a night-arc that started last night, use YESTERDAY's dow.
   if (jdNow < today.sunriseJD) {
-    // Before today's sunrise — we're in the night arc that started at
-    // yesterday's sunset.
+    // Before today's sunrise — night arc that started at yesterday's sunset.
     const yday = new Date(date.getTime() - 86400000);
     const ytr  = sunTransitsFor(yday, latDeg, lonDeg);
     if (ytr.sunsetJD == null) return null;
     phase = 'night';
     base = ytr.sunsetJD;
     arcLen = today.sunriseJD - ytr.sunsetJD;
-    dayIndex = new Date((ytr.sunriseJD - 2440587.5) * 86400000).getUTCDay();
+    dayIndex = localDowOfJD(ytr.sunriseJD);
   } else if (jdNow < today.sunsetJD) {
     phase = 'day';
     base = today.sunriseJD;
     arcLen = today.sunsetJD - today.sunriseJD;
-    dayIndex = date.getUTCDay();
+    dayIndex = localDowOfJD(today.sunriseJD);
   } else {
     phase = 'night';
     base = today.sunsetJD;
     arcLen = tomorrow.sunriseJD - today.sunsetJD;
-    dayIndex = date.getUTCDay();
+    dayIndex = localDowOfJD(today.sunriseJD);
   }
   const hourLen = arcLen / 12;
   const hourIdx = Math.floor((jdNow - base) / hourLen); // 0..11

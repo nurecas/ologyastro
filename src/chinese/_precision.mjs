@@ -200,6 +200,26 @@ section('9. Solar term metadata');
   eq(MONTH_JIES[0].name, 'Lichun', 'MONTH_JIES[0] = Lichun');
 }
 
+// --- 10. Swiss-driven: solar-term range edges resolve (regression) ---
+section('10. Range-edge births compute via Meeus Sun (no blank chart)');
+{
+  const { initSwiss } = await import('../astro/ephemeris.js');
+  const { computeBaziChart } = await import('./compute/chart.js');
+  await initSwiss();
+  // Lower edge: mid-Jan 1200 is BEFORE Lichun 1200, so its solar year is 1199,
+  // whose Lichun (Feb 1199) is outside the Swiss data window. The pillars must
+  // still resolve (via the accurate Meeus Sun) rather than returning null.
+  const lo = computeBaziChart({ name: 'lo', year: 1200, month: 1, day: 15, hour: 6, minute: 0, tzOffsetMin: 0, latDeg: 39.9, lonDeg: 116.4 }, { gender: 'male' });
+  ok(!!lo, '1200-01-15 produces a chart (was null before)');
+  // Solar year 1199 = sexagenary index (1199-1984) mod 60 = 55 → 己未.
+  eq((lo?.pillars?.year?.stem?.hanzi ?? '') + (lo?.pillars?.year?.branch?.hanzi ?? ''), '己未', '1200-01-15 → 己未 (solar year 1199)');
+  ok(lo?.luck?.pillars?.length > 0, '1200-01-15 has luck pillars');
+  // Upper edge: late-Dec 2399 — forward luck pillars need the Jan-2400 jié.
+  const hi = computeBaziChart({ name: 'hi', year: 2399, month: 12, day: 20, hour: 6, minute: 0, tzOffsetMin: 0, latDeg: 39.9, lonDeg: 116.4 }, { gender: 'male' });
+  ok(!!hi, '2399-12-20 produces a chart');
+  ok(hi?.luck?.pillars?.length > 0, '2399-12-20 forward luck pillars resolve (was null before)');
+}
+
 // --- Summary ---
 console.log(`\n──────────────────────────────────────────────────`);
 console.log(`  ${PASS} passed · ${FAIL} failed`);

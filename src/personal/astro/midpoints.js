@@ -2,10 +2,12 @@
 // Phase 3 — Midpoints (Ebertin 90° dial)
 //
 // Reinhold Ebertin's *The Combination of Stellar Influences* formalised
-// midpoint analysis. For each pair of the 10 classical planets we compute
-// the ecliptic midpoint; a planet, Ascendant, or MC within 1.5° of a
-// midpoint is an "activation" — the midpoint's archetype is being
-// expressed by that body.
+// midpoint analysis on a 90° dial: for each pair of the 10 classical planets
+// we compute the ecliptic midpoint; a planet, Ascendant, or MC within 1.5° of
+// that midpoint by conjunction (0°), square (90°) or opposition (180°)
+// "activates" it — the midpoint's archetype is expressed by that body. (The
+// three hard aspects coincide on the 90° dial, which is why square and
+// opposition contacts count, not only the direct conjunction.)
 //
 // Used by the Profile Midpoints card (Advanced mode — Phase 5).
 // -----------------------------------------------------------------------------
@@ -27,6 +29,17 @@ function angDist180(a, b) {
   let d = Math.abs(a - b) % 360;
   if (d > 180) d = 360 - d;
   return d;
+}
+
+// 90°-dial contact: is `ptLon` within `orbDeg` of `midLon` by conjunction (0°),
+// square (90°) or opposition (180°)? Returns the orb to the nearest such angle
+// and which aspect it is, or null if outside orb.
+function dialContact(midLon, ptLon, orbDeg) {
+  const sep = angDist180(midLon, ptLon);     // 0..180
+  const k = Math.round(sep / 90);            // 0 → conjunction, 1 → square, 2 → opposition
+  const d = Math.abs(sep - k * 90);
+  if (d > orbDeg) return null;
+  return { orb: d, aspect: k === 0 ? 'conjunction' : k === 1 ? 'square' : 'opposition' };
 }
 
 // Build all 45 pair midpoints of the classical 10. Returns:
@@ -60,9 +73,9 @@ export function activatedMidpoints(natal, orbDeg = 1.5) {
     for (const t of targets) {
       // Skip trivial activations: the midpoint's own two endpoints.
       if (t.name === m.a || t.name === m.b) continue;
-      const d = angDist180(m.lonDeg, t.lonDeg);
-      if (d <= orbDeg) {
-        out.push({ ...m, activator: t.name, orb: d });
+      const c = dialContact(m.lonDeg, t.lonDeg, orbDeg);
+      if (c) {
+        out.push({ ...m, activator: t.name, orb: c.orb, aspect: c.aspect });
       }
     }
   }

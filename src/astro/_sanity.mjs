@@ -21,47 +21,51 @@ function run(date, label, expected) {
   }
 }
 
-// Expected values taken from a common astronomical almanac; tropical,
-// geocentric-of-date, degrees 0-360.
+// Expected values are Swiss-Ephemeris (JPL-DE-calibrated) truth for each
+// instant — tropical, geocentric-of-date, degrees 0-360 — regenerated via
+// scripts/gen-swiss-reference.mjs style probe. (The earlier hand-entered
+// "almanac" set had six transcription errors: Aug-1999 Mercury was off 36°,
+// 2020 Moon off 20°, etc., which made the Standish fallback look wrong when it
+// is in fact accurate to ~0.3° here.)
 
 // 2000-01-01 00:00 UT: standard J2000 check.
 run(new Date('2000-01-01T00:00:00Z'), 'J2000', {
   Sun: 279.86,
-  Moon: 217.70,
-  Mercury: 271.15,
-  Venus: 240.81,
-  Mars: 327.56,
+  Moon: 217.29,
+  Mercury: 271.11,
+  Venus: 240.96,
+  Mars: 327.58,
   Jupiter: 25.23,
-  Saturn: 40.35,
-  Uranus: 314.73,
-  Neptune: 303.57,
-  Pluto: 251.36,
+  Saturn: 40.41,
+  Uranus: 314.78,
+  Neptune: 303.18,
+  Pluto: 251.44,
 });
 
 // 1999-08-11 11:00 UT (great solar eclipse / grand cross)
 run(new Date('1999-08-11T11:00:00Z'), 'Aug 1999 Grand Cross', {
-  Sun: 138.71,
-  Moon: 138.58,
-  Mercury: 156.74,
-  Venus: 145.34,
-  Mars: 232.05,
-  Jupiter: 44.65,
-  Saturn: 46.91,
-  Uranus: 314.73,
-  Neptune: 302.70,
-  Pluto: 248.43,
+  Sun: 138.35,
+  Moon: 138.27,
+  Mercury: 120.16,
+  Venus: 152.16,
+  Mars: 226.84,
+  Jupiter: 34.68,
+  Saturn: 46.88,
+  Uranus: 314.67,
+  Neptune: 302.55,
+  Pluto: 247.75,
 });
 
 // 2020-12-21 18:00 UT — "Great Conjunction" Jupiter-Saturn
 run(new Date('2020-12-21T18:00:00Z'), '2020 Great Conjunction', {
-  Sun: 270.52,
-  Moon: 337.46,
-  Mercury: 275.24,
-  Venus: 246.49,
-  Mars: 22.02,
-  Jupiter: 300.33,
-  Saturn: 300.45,
-  Uranus: 36.57,
-  Neptune: 348.28,
-  Pluto: 293.62,
+  Sun: 270.34,
+  Moon: 357.71,
+  Mercury: 271.25,
+  Venus: 247.58,
+  Mars: 23.21,
+  Jupiter: 300.48,
+  Saturn: 300.48,
+  Uranus: 36.96,
+  Neptune: 348.31,
+  Pluto: 293.86,
 });
