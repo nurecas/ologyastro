@@ -99,9 +99,45 @@ npx serve -p 8000 dist-personal
 
 ---
 
-## Netlify / Cloudflare Pages / Vercel
+## Cloudflare Pages — the full multi-system site
 
-All three auto-detect Vite projects. Point the build command at `npm run build:personal` and the publish directory at `dist-personal`. Set the environment variable `VITE_BASE=/` since those platforms serve at the root.
+The deployed site serves all four traditions, so the build you want is
+**`build:ology`**, not `build:personal`:
 
----
+| Setting | Value |
+|---|---|
+| Build command | `npm run build:ology` |
+| Build output directory | `dist-ology` |
+| Node version | `24` (pinned by `.nvmrc`; or set `NODE_VERSION=24`) |
+| Environment | `VITE_BASE=/` (default — Pages serves at the root) |
 
+`dist-ology/` contains `index.html` (Western, at `/`), `vedic.html`,
+`chinese.html`, `gematria.html`, plus `_headers`, `sw.js`, `workbox-*.js`,
+`swephfiles/` and `assets/`. Asset URLs are root-absolute (`/assets/…`),
+which is what Pages wants at a root domain.
+
+> **Do not use the bare `npm run build`.** It fails with
+> `Rollup failed to resolve import "virtual:pwa-register"` — the PWA plugin
+> is only enabled in the `personal` and `ology` modes, so the unmoded build
+> cannot resolve the service-worker virtual module. Only `build:ology` and
+> `build:personal` work.
+
+There is no deploy command in this repo: `npm run deploy:ology` only builds
+and prints a reminder. Publishing happens one of two ways:
+
+- **Git integration (recommended).** Connect the repo in the Cloudflare Pages
+  dashboard with the settings above; then `git push` is the deploy.
+- **Direct upload.** `npm run build:ology && npx wrangler pages deploy dist-ology --project-name=<project>`
+
+### Single-tradition (Western only)
+
+Same idea with `npm run build:personal` → `dist-personal`. Used for the
+standalone personal-chart site; GitHub Pages instructions are above.
+
+## Node version
+
+The build is pinned to **Node 24** (current LTS, "Krypton") via `.nvmrc` and
+`.node-version`, with `engines.node >= 22` in `package.json`. Verified on
+Node 22.22.2 and 24.22.1: full test suite (1022 assertions) and both
+`build:ology` / `build:personal` pass on each. Without a pin, Cloudflare Pages
+falls back to an old default Node that cannot run Vite 5.

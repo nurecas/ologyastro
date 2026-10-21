@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Chronological harmonic resonance field visualization of planetary interference patterns.",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "postinstall": "node scripts/copy-swephfiles.mjs",
     "predev": "node scripts/copy-swephfiles.mjs",

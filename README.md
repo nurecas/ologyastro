@@ -60,11 +60,21 @@ Then open `http://localhost:5173/personal.html` (or `/vedic.html`,
 
 ## Build for deploy
 
+Full multi-system site (what's deployed to Cloudflare Pages):
+
 ```
-npm run build:personal
+npm run build:ology      # → dist-ology/
 ```
 
-Drag `dist-personal/` onto Cloudflare Pages.
+Western-only single-tradition build:
+
+```
+npm run build:personal   # → dist-personal/
+```
+
+Node 24 is pinned via `.nvmrc`. Note the bare `npm run build` does **not**
+work — the PWA virtual module is only wired into the `ology` / `personal`
+modes. See [DEPLOY.md](./DEPLOY.md) for Cloudflare Pages settings.
 
 ## LLM JSON export
 
