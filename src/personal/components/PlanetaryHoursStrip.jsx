@@ -23,7 +23,7 @@ export default function PlanetaryHoursStrip({ date, lat, lon }) {
 
   const fmtTime = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   return (
-    <div className="flex items-center gap-4 bg-[#0a0a14] border border-white/5 rounded px-3 py-1.5 text-[11px] mb-2">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-[#0a0a14] border border-white/5 rounded px-3 py-1.5 text-[11px] mb-2">
       <span className="text-[#9b9bbd]">Hour of</span>
       <span className="text-[#f5d680] text-[14px]">{GLYPH[cur.ruler]}</span>
       <span className="text-[#e6e6f0]">{cur.ruler}</span>
@@ -37,7 +37,7 @@ export default function PlanetaryHoursStrip({ date, lat, lon }) {
       )}
       <button
         onClick={() => dismissHint('planetaryHours')}
-        className="ml-auto text-[10px] text-[#6d6d88] hover:text-[#e6e6f0]"
+        className="ml-auto text-[10px] text-[#6d6d88] hover:text-[#e6e6f0] tap"
         title="Hide for this session"
       >×</button>
     </div>

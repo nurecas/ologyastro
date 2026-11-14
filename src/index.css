@@ -96,3 +96,67 @@ input[type="range"].spine-scrub::-moz-range-thumb {
    still scrolls — just without the visual chrome cluttering the design. */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ───────────────────────── Responsive / touch layer ─────────────────────────
+   Everything below is scoped to phones, small windows and touch screens, so
+   the desktop layout (fine pointer, ≥ 1024 px) renders exactly as before.
+
+   1. Phone-width windows and touch screens: lift the dense 8–10.5 px labels
+      to an 11 px floor so nothing readable is smaller than that.            */
+@media (max-width: 639px), (pointer: coarse) {
+  .text-\[8px\], .text-\[9px\], .text-\[9\.5px\],
+  .text-\[10px\], .text-\[10\.5px\],
+  :root .sm\:text-\[10px\], :root .sm\:text-\[10\.5px\] { font-size: 11px; } /* responsive variants are emitted last */
+  .btn-ghost { font-size: 11.5px; }
+}
+
+/* 2. Touch screens: comfortable hit areas (≥ 40 px) on the shared control
+      classes, and 16 px form text so iOS Safari does not zoom on focus.  */
+@media (pointer: coarse) {
+  .btn-ghost { min-height: 40px; min-width: 40px; padding-left: 12px; padding-right: 12px; }
+  .form-input { min-height: 44px; font-size: 16px !important; }
+  /* (0,0,2) specificity: beats Tailwind preflight's `font-size: 100%`, loses
+     to any explicit text-size class (the larger ones are kept). */
+  body :where(input[type="text"], input[type="search"], input[type="number"], input[type="date"],
+              input[type="time"], input[type="email"], select, textarea) { font-size: 16px; }
+  :is(input, select, textarea):is(.text-\[10px\], .text-\[11px\], .text-\[11\.5px\], .text-\[12px\],
+    .text-\[12\.5px\], .text-\[13px\], .text-\[14px\], .text-xs, .text-sm) { font-size: 16px; }
+  input[type="range"].spine-scrub { height: 28px; background: transparent; }
+  input[type="range"].spine-scrub::-webkit-slider-runnable-track { height: 2px; background: rgba(255, 255, 255, 0.08); }
+  input[type="range"].spine-scrub::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -10px; }
+  input[type="range"].spine-scrub::-moz-range-track { height: 2px; background: rgba(255, 255, 255, 0.08); }
+  input[type="range"].spine-scrub::-moz-range-thumb { width: 22px; height: 22px; }
+  input[type="checkbox"], input[type="radio"] { width: 18px; height: 18px; }
+  /* Every button / select / link-button in the apps grows to a 40 px tall
+     hit area on touch (opt out with .tap-none for purely visual buttons
+     such as timeline bars). Width is left to the content; icon-only buttons
+     add .tap for a 40 × 40 square. */
+  :where(button, select, summary, [role="button"], [role="tab"]):not(.tap-none) { min-height: 40px; }
+  /* .tap — opt-in class for small icon / text buttons that should grow to a
+     40 px target on touch without changing their desktop size. */
+  .tap { min-height: 40px; min-width: 40px; }
+  .tap-h { min-height: 40px; }
+}
+
+/* 3. Bounded horizontal scrollers (tables, wide tab rows): a visible edge so
+      the user can tell the region scrolls on its own. */
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; max-width: 100%; }
+
+/* Predictive simple wheel: degree labels sit at 8 user units in a 420-unit
+   viewBox; lift them on touch screens, more on phones (wheel drawn smaller). */
+@media (pointer: coarse) { .sw-deg { font-size: 11px; } }
+@media (max-width: 639px) { .sw-deg { font-size: 13px; } }
+
+/* North / South Indian charts: their 9–10 unit labels (house numbers,
+   upagrahas, ASC / LAGNA, South cell captions) are lifted on phones and touch
+   screens. Sizes are in the chart's own 400-unit space: a phone draws the
+   chart at 290–400 px, so 13.5 units is about 10–13 px on screen. */
+@media (max-width: 639px), (pointer: coarse) {
+  .vc-small { font-size: 12px; }
+  .vc-cell  { font-size: 10.5px; letter-spacing: 0.02em; } /* full "Sagittarius · H12" must fit its 100-unit cell */
+}
+@media (max-width: 639px) {
+  .vc-small  { font-size: 13.5px; }
+  .vc-cell   { font-size: 13.5px; letter-spacing: 0.02em; } /* caption is abbreviated ("Sag · H12") below 640 px */
+  .vc-planet { font-size: 14px; }                           /* graha glyphs: 12–13 units → 14 (their line pitch) */
+}

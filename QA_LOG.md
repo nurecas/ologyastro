@@ -57,15 +57,24 @@ pass before you ship.
 
 ## Responsive QA
 
-Scope explicitly narrowed per user: desktop + tablets-landscape is the
-design target. A `<MobileNotice>` fires on < 820 px viewports and the
-rest is "degraded but usable" rather than reflowed.
+Every page now works from 320 px phones to 2560 px desktops (the earlier
+desktop + tablet-landscape scope, and the blocking `<MobileNotice>`, are
+gone).
 
-- ✅ MobileNotice appears on narrow viewports, dismissible, persists
-- ✅ iPad-landscape (1024 × 768, 1180 × 820) layouts: NatalWheel `[1fr_340]`, Synastry `[1fr_320_300]`, Profile `max-w-[1400]` all fit
-- ✅ iPad touch-to-rotate on the globe fixed (`touch-action: none`)
-- 🧑 Portrait-iPad (768 × 1024) — MobileNotice fires; degraded layouts
-- 🧑 Phone (360–412 px) — MobileNotice fires; degraded layouts
+- ✅ No sideways scrolling, clipped text or off-screen pop-up in any mode of
+  any page at 320, 360, 390, 430 px (phones), 667 × 375 and 844 × 390
+  (phones on their side), 768, 820, 1024 px (tablets) and 1280–2560 px
+  (desktop) — scripted Playwright audit of every mode, drawer and menu
+- ✅ Desktop browsers with classic scrollbars (Windows, Linux): Vedic and
+  Chinese no longer scroll sideways by the scrollbar's width
+- ✅ Touch: 40 px targets, 16 px form text (no iOS zoom on focus), drag to
+  rotate and two-finger pinch to zoom on both globes
+- ✅ Desktop rendering at 1280 × 720, 1366 × 768 and 1440 × 900 compared
+  pixel-for-pixel with the previous version: identical except the
+  Predictive wheel, which no longer shrinks to ~120 px on short laptop
+  screens
+- 🧑 Real-device check on iOS Safari and Android Chrome (audit ran in
+  emulated Chromium)
 
 ## Browser QA
 
@@ -152,9 +161,9 @@ commit audit trail:
   breakage.
 - Tri-wheel aspect lines between progressed and transit (brief implied
   but not mandated). Three rings render positions only.
-- Phase-6 mobile responsive reflow (brief Section 3.10 had detailed
-  bottom-sheet / accordion patterns) — scoped down to the dismissible
-  MobileNotice per user decision.
+- Phase-6 mobile responsive reflow (brief Section 3.10) — originally
+  scoped down to a dismissible MobileNotice; since done, see
+  "Responsive QA" above.
 - JPL Horizons live cross-check in the browser Runner (brief Phase 1):
   deferred — the Runner tests Swiss port fidelity against Swiss C, and
   Swiss is itself calibrated against JPL DE431. A live network query

@@ -51,6 +51,10 @@ export default function LifeVectorsGraph() {
   const [draft, setDraft] = useState({ date: '', label: '', category: 'other' });
   const svgRef = useRef(null);
   const [w, setW] = useState(1200);
+  // Axis labels: 11 px floor when the graph is phone-narrow or on touch screens (svg is drawn
+  // 1:1 in CSS px, so this is the on-screen size); unchanged above 640 px.
+  const coarse = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+  const afs = (n) => (w < 640 || coarse ? Math.max(11, n) : n);
 
   useEffect(() => {
     const handle = () => { if (svgRef.current) setW(svgRef.current.clientWidth); };
@@ -163,7 +167,7 @@ export default function LifeVectorsGraph() {
   };
 
   return (
-    <div className="w-full p-6 text-[#e6e6f0]">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0]">
       <header className="mb-4">
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">
           Life Vectors
@@ -209,7 +213,7 @@ export default function LifeVectorsGraph() {
               onClick={(e) =>
                 openInfo({ kind: 'layer', id: l.id, name: l.name, color: l.color, x: e.clientX, y: e.clientY })
               }
-              className="text-[11px] px-1.5 py-1 text-[#6d6d88] hover:text-white border-l border-white/10"
+              className="text-[11px] px-1.5 py-1 tap text-[#6d6d88] hover:text-white border-l border-white/10"
               aria-label="What this layer means"
               title="What this layer means"
             >ℹ</button>
@@ -241,10 +245,10 @@ export default function LifeVectorsGraph() {
             <g key={y}>
               <line x1={xOfYear(y)} x2={xOfYear(y)} y1={padT} y2={padT + H_plot}
                     stroke="#d8d8e8" strokeWidth={0.4} opacity={0.12} />
-              <text x={xOfYear(y)} y={H - 22} fontSize={10} fill="#8b8ba5" textAnchor="middle">
+              <text x={xOfYear(y)} y={H - 22} fontSize={afs(10)} fill="#8b8ba5" textAnchor="middle">
                 {y}
               </text>
-              <text x={xOfYear(y)} y={H - 8} fontSize={9.5} fill="#6d6d88" textAnchor="middle">
+              <text x={xOfYear(y)} y={H - 8} fontSize={afs(9.5)} fill="#6d6d88" textAnchor="middle">
                 age {Math.round(ageAt(y))}
               </text>
             </g>
@@ -318,7 +322,7 @@ export default function LifeVectorsGraph() {
           <g>
             {[yMax, (yMax + yMin) / 2, yMin].map((v, i) => (
               <g key={i}>
-                <text x={padL - 6} y={yOfVal(v) + 3} fontSize={10} fill="#6d6d88" textAnchor="end">
+                <text x={padL - 6} y={yOfVal(v) + 3} fontSize={afs(10)} fill="#6d6d88" textAnchor="end">
                   {v.toFixed(2)}
                 </text>
               </g>
@@ -347,7 +351,7 @@ export default function LifeVectorsGraph() {
       </div>
 
       {/* Legend / hint */}
-      <div className="mt-3 flex items-baseline justify-between text-[11px] text-[#6d6d88]">
+      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-[#6d6d88]">
         <div>
           {events.length} outer-planet transit events on the gold ribbon.
           Hover the chart for exact values at any year.
@@ -365,7 +369,7 @@ export default function LifeVectorsGraph() {
       {/* Event journal panel */}
       {ENABLE_JOURNAL && journalOpen && (
         <section className="mt-4 bg-[#0c0c18] border border-white/10 rounded-md p-4">
-          <div className="grid grid-cols-[1fr_1fr_160px_90px] gap-2 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_160px_90px] gap-2 items-end">
             <div>
               <div className="text-[10.5px] tracking-[0.22em] uppercase text-[#9b9bbd] mb-1">Date</div>
               <input

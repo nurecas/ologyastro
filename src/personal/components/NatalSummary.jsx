@@ -31,7 +31,7 @@ export default function NatalSummary() {
       ? 'Standish fallback \u2014 Swiss failed to load'
       : null;
   return (
-    <div className="bg-[#0a0a14] border-b border-white/5 px-6 py-3 flex items-center gap-6 text-[12px]">
+    <div className="bg-[#0a0a14] border-b border-white/5 px-3 sm:px-6 py-3 flex flex-wrap lg:flex-nowrap items-center gap-x-6 gap-y-2 text-[12px]">
       <div>
         <div className="text-[#9b9bbd] text-[10px] tracking-[0.25em] uppercase">Name</div>
         <div className="text-[#e6e6f0]">{natal.birth.name}</div>
@@ -47,7 +47,8 @@ export default function NatalSummary() {
         <div className="text-[#9b9bbd] text-[10px] tracking-[0.25em] uppercase">Place</div>
         <div className="text-[#e6e6f0]">{natal.birth.placeName}</div>
       </div>
-      <div className="flex-1 flex items-center gap-4 border-l border-white/5 pl-6 overflow-x-auto">
+      {/* Planet strip: own full-width row below lg, scrolling sideways inside itself. */}
+      <div className="flex-1 basis-full lg:basis-0 min-w-0 flex items-center gap-4 lg:border-l border-white/5 lg:pl-6 overflow-x-auto">
         {natal.planets.map(p => (
           <button
             key={p.name}

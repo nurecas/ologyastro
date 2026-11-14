@@ -165,5 +165,7 @@ for the Phase-8 QA checklist.
 Explicitly **out of scope**: analytics, authentication, server-side
 compute, AI/LLM runtime calls, Campanus/Porphyry/Regiomontanus houses,
 Arabic Parts beyond Fortune, harmonics, horary/electional workflows,
-heliocentric/draconic zodiacs, multi-language UI. Ology is a
-desktop/tablet-landscape tool; a polite dialog informs phone visitors.
+heliocentric/draconic zodiacs, multi-language UI. Ology works on
+phones, tablets and desktops (320 px wide and up): panels stack into one
+column on small screens and wide tables or tab rows scroll inside their
+own frame.

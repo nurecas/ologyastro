@@ -45,7 +45,7 @@ export default function Dasha() {
   const xOf = (t) => ((t - tStart) / total) * 100;
 
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1400px] mx-auto space-y-6">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1400px] mx-auto space-y-6">
       <header>
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">Vimshottari Dasha</h2>
         <p className="text-[13px] text-[#9b9bbd] mt-1 max-w-3xl leading-relaxed">
@@ -62,7 +62,10 @@ export default function Dasha() {
           the date probe (defaults to today). */}
       <div>
         <div className="text-[11px] tracking-[0.25em] uppercase text-[#9b9bbd] mb-2">Lifetime — all Mahadashas</div>
-        <div className="relative h-12 bg-black/30 rounded border border-white/5 overflow-hidden">
+        {/* Phones: the 120-year ribbon keeps a readable minimum width and
+            scrolls sideways inside this frame; sm+ it fits as before. */}
+        <div className="scroll-x rounded">
+        <div className="relative h-12 bg-black/30 rounded border border-white/5 overflow-hidden min-w-[600px] sm:min-w-0">
           {sequence.map((m, i) => {
             const left = xOf(m.start.getTime());
             const width = xOf(m.end.getTime()) - left;
@@ -89,6 +92,7 @@ export default function Dasha() {
             style={{ left: `${xOf(probeDate.getTime())}%`, boxShadow: '0 0 6px rgba(245,214,128,0.8)' }}
             title={`Probe date · ${fmtDate(probeDate)}`}
           />
+        </div>
         </div>
       </div>
 
@@ -160,7 +164,7 @@ function DateProbe({ chart, date, setDate }) {
     <div className="bg-[#0c0c18] border border-[#f5d680]/30 rounded-md p-4 space-y-3">
       <div className="flex flex-wrap items-baseline gap-3">
         <div className="text-[11px] tracking-[0.25em] uppercase text-[#9b9bbd]">Dasha at any date</div>
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex flex-wrap items-center gap-1 ml-auto">
           <button onClick={() => step(-365 * 86400000)} className="btn-ghost text-[11px] px-2" title="−1 year">«</button>
           <button onClick={() => step(-30 * 86400000)}  className="btn-ghost text-[11px] px-2" title="−1 month">‹</button>
           <input type="date" value={toIso(date)} onChange={onPick}

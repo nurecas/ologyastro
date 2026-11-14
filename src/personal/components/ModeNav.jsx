@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { usePersonal } from '../store.js';
 import { downloadNatalChart } from '../lib/downloadChart.js';
 import { downloadAstroMap } from '../lib/downloadAstroMap.js';
 import { exportWesternForLLM, exportWesternRaw } from '../lib/llmExport.js';
 import SystemNav from '../../shared/shell/SystemNav.jsx';
 import DownloadMenu from '../../shared/shell/DownloadMenu.jsx';
+import useViewportClamp from '../../shared/lib/useViewportClamp.js';
+import useActiveTabInView from '../../shared/lib/useActiveTabInView.js';
 
 // Phase 5: nav order matches brief Section 3.3 — Predictive is the 6th
 // mode, inserted between Transits and Map. Hidden in Basic mode. The
@@ -36,6 +38,10 @@ export default function ModeNav() {
   // Optional one-line "focus" the user can add before exporting for an LLM.
   const [focus, setFocus] = useState('');
   const [focusOpen, setFocusOpen] = useState(false);
+  const focusRef = useRef(null);
+  useViewportClamp(focusRef, focusOpen);
+  const tabsRef = useRef(null);
+  useActiveTabInView(tabsRef, mode);
 
   const downloadOptions = [
     {
@@ -72,14 +78,17 @@ export default function ModeNav() {
   return (
     <>
     <SystemNav activeId="western" />
-    <nav className="bg-[#0b0b15] border-b border-white/5 px-6 py-2 flex items-center justify-between">
+    {/* Below lg the two halves wrap onto separate rows: the mode pills get a
+        full-width row that scrolls sideways inside itself when needed, the
+        chart actions sit beneath. lg+ is the original single row. */}
+    <nav className="bg-[#0b0b15] border-b border-white/5 px-3 sm:px-6 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-2">
       {/* Left: mode buttons */}
-      <div className="flex gap-1">
+      <div ref={tabsRef} className="flex gap-1 overflow-x-auto no-scrollbar min-w-0 max-w-full">
         {MODES.map(m => (
           <button
             key={m.id}
             onClick={() => setMode(m.id)}
-            className={`btn-ghost ${mode === m.id ? 'active' : ''}`}
+            className={`btn-ghost shrink-0 whitespace-nowrap ${mode === m.id ? 'active' : ''}`}
             title={m.hint}
           >
             {m.label}
@@ -90,7 +99,7 @@ export default function ModeNav() {
       {/* Right: chart actions + brand. Download dropdown offers PNG, JSON-
           for-AI (with optional focus line), and raw JSON. Then "Change
           chart" returns to the birth form, gear opens settings. */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 ml-auto">
         <div className="relative">
           <button
             onClick={() => setFocusOpen(v => !v)}
@@ -101,7 +110,7 @@ export default function ModeNav() {
             {focus ? '✦ Focus set' : '✦ Focus'}
           </button>
           {focusOpen && (
-            <div className="absolute right-0 top-full mt-1 z-30 w-72 bg-[#0b0b15] border border-white/10 rounded-md shadow-2xl p-3">
+            <div ref={focusRef} className="absolute right-0 top-full mt-1 z-30 w-72 bg-[#0b0b15] border border-white/10 rounded-md shadow-2xl p-3">
               <div className="text-[10px] tracking-[0.22em] uppercase text-[#9b9bbd] mb-1">Focus for AI reading</div>
               <input
                 type="text"
@@ -128,7 +137,8 @@ export default function ModeNav() {
             <path d="M2 6h9l-2-2" />
             <path d="M14 10H5l2 2" />
           </svg>
-          <span>Change chart</span>
+          <span className="sm:hidden">Change</span>
+          <span className="hidden sm:inline">Change chart</span>
         </button>
         <button
           onClick={toggleSettings}

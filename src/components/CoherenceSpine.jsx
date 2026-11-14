@@ -18,6 +18,12 @@ export default function CoherenceSpine() {
   const svgRef = useRef(null);
   const [w, setW] = useState(1200);
   const H = 120;
+  // Phone-width or touch screens: 11 px labels instead of 9, and (below) only
+  // the peak labels that have room. The svg is drawn 1:1 in CSS px, so these
+  // are on-screen sizes; wide fine-pointer (desktop) rendering is unchanged.
+  const coarse = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+  const big = w < 640 || coarse;
+  const lfs = big ? 11 : 9;
 
   useEffect(() => {
     const handle = () => {
@@ -59,9 +65,11 @@ export default function CoherenceSpine() {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   };
 
   const decades = useMemo(() => {
@@ -92,8 +100,8 @@ export default function CoherenceSpine() {
   return (
     <div className="w-full select-none">
       {/* toolbar */}
-      <div className="px-5 pt-2 flex items-center justify-between text-[10px] tracking-[0.22em] uppercase text-[#9b9bbd]">
-        <div className="flex items-center gap-2">
+      <div className="px-3 sm:px-5 pt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] tracking-[0.22em] uppercase text-[#9b9bbd]">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-[#6d6d88]">Coherence:</span>
           {['raw', 'weighted', 'both'].map(k => (
             <button
@@ -126,6 +134,8 @@ export default function CoherenceSpine() {
         viewBox={`0 0 ${w} ${H}`}
         preserveAspectRatio="none"
         className="block cursor-crosshair mt-1"
+        // Touch: a sideways drag scrubs the timeline; vertical drags still scroll the page.
+        style={{ touchAction: 'pan-y' }}
         onPointerDown={onPointerDown}
       >
         <defs>
@@ -149,7 +159,7 @@ export default function CoherenceSpine() {
             <g key={yr} opacity={is100 ? 0.25 : 0.1}>
               <line x1={x} x2={x} y1={0} y2={H} stroke="#d8d8e8" strokeWidth={0.6} />
               {is100 && (
-                <text x={x + 4} y={H - 4} fontSize="9" fontFamily="Inter, sans-serif" fill="#d8d8e8" opacity={0.55}>
+                <text x={x + 4} y={H - 4} fontSize={lfs} fontFamily="Inter, sans-serif" fill="#d8d8e8" opacity={0.55}>
                   {yr}
                 </text>
               )}
@@ -184,18 +194,27 @@ export default function CoherenceSpine() {
         )}
 
         {/* Peaks (raw) */}
-        {showRaw && peaks.map((p, i) => {
-          const x = ((p.year - startYear) / (endYear - startYear)) * w;
-          const y = H - 12 - p.value * (H - 24);
-          return (
-            <g key={i} opacity={0.8}>
-              <circle cx={x} cy={y} r={2.3} fill="#fff8dd" />
-              <text x={x} y={y - 8} fontSize="9" fontFamily="Inter, sans-serif" fill="#f5d680" textAnchor="middle" opacity={0.85}>
-                {Math.round(p.year)}
-              </text>
-            </g>
-          );
-        })}
+        {showRaw && (() => {
+          const taken = [];   // x of the labels already placed (phone widths only)
+          return peaks.map((p, i) => {
+            const x = ((p.year - startYear) / (endYear - startYear)) * w;
+            const y = H - 12 - p.value * (H - 24);
+            // On a narrow spine the peaks crowd together: keep a label only
+            // when no earlier one sits within 34 px of it.
+            const room = w >= 640 || taken.every(tx => Math.abs(tx - x) >= 34);
+            if (room) taken.push(x);
+            return (
+              <g key={i} opacity={0.8}>
+                <circle cx={x} cy={y} r={2.3} fill="#fff8dd" />
+                {room && (
+                  <text x={x} y={big ? Math.max(lfs, y - 8) : y - 8} fontSize={lfs} fontFamily="Inter, sans-serif" fill="#f5d680" textAnchor="middle" opacity={0.85}>
+                    {Math.round(p.year)}
+                  </text>
+                )}
+              </g>
+            );
+          });
+        })()}
 
         {/* Scrubber */}
         <line x1={currentX} x2={currentX} y1={0} y2={H} stroke="#f5d680" strokeWidth={1} opacity={0.9} />

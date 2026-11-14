@@ -69,12 +69,14 @@ export default function HUD() {
         <div className="font-serif text-[20px] tracking-[0.22em] text-[#e8e5d5] pointer-events-none">
           OLOGY
         </div>
-        <div className="text-[9.5px] tracking-[0.3em] uppercase text-[#9b9bbd] mt-1 pointer-events-none">
+        {/* Hidden on phone-width screens, where it would run under the date
+            and coherence readout on the right. */}
+        <div className="hidden sm:block text-[9.5px] tracking-[0.3em] uppercase text-[#9b9bbd] mt-1 pointer-events-none">
           Chronological Harmonic Resonance Field
         </div>
         <a
           href="/personal.html"
-          className="inline-block mt-2 text-[10px] tracking-[0.25em] uppercase text-[#f5d680]/80 hover:text-[#f5d680] border border-[#f5d680]/30 hover:border-[#f5d680]/70 rounded px-2 py-0.5 transition-colors"
+          className="inline-block mt-2 max-sm:mt-9 tap-h text-[10px] tracking-[0.25em] uppercase text-[#f5d680]/80 hover:text-[#f5d680] border border-[#f5d680]/30 hover:border-[#f5d680]/70 rounded px-2 py-0.5 transition-colors"
         >
           ✦ Your Chart
         </a>
@@ -117,7 +119,7 @@ export default function HUD() {
       </div>
 
       {/* Planet strip */}
-      <div className="absolute bottom-4 left-5 flex gap-3 text-[10px] tracking-wider text-[#bfbfd6]/85 select-none pointer-events-none">
+      <div className="absolute bottom-4 left-5 max-w-[calc(100%-2.5rem)] overflow-hidden flex gap-3 text-[10px] tracking-wider text-[#bfbfd6]/85 select-none pointer-events-none">
         {PLANETS.map(p => {
           const { sign, degree } = degreesToSign(L[p]);
           return (

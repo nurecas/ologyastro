@@ -17,12 +17,15 @@
 // exist.
 
 import React, { useEffect, useRef } from 'react';
+import useViewportClamp from '../lib/useViewportClamp.js';
 
 export default function ProfilesDropdown({
   profiles, profileKey, onSelect, onLoad, onForget, onClearAll,
   profilesOpen, setProfilesOpen,
 }) {
   const ref = useRef(null);
+  const listRef = useRef(null);
+  useViewportClamp(listRef, profilesOpen);
   useEffect(() => {
     if (!profilesOpen) return;
     const handler = (e) => {
@@ -46,7 +49,7 @@ export default function ProfilesDropdown({
         <span style={{ transform: profilesOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}>▾</span>
       </button>
       {profilesOpen && (
-        <div className="absolute z-20 top-full right-0 mt-1 bg-[#0b0b15] border border-white/10 rounded-md shadow-xl w-[340px] max-h-[320px] overflow-y-auto">
+        <div ref={listRef} className="absolute z-20 top-full right-0 mt-1 bg-[#0b0b15] border border-white/10 rounded-md shadow-xl w-[340px] max-h-[320px] overflow-y-auto">
           <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 sticky top-0 bg-[#0b0b15]">
             <div className="text-[10px] tracking-[0.25em] uppercase text-[#9b9bbd]">
               Saved charts · {profiles.length}
@@ -54,7 +57,7 @@ export default function ProfilesDropdown({
             <button
               type="button"
               onClick={() => { onClearAll(); setProfilesOpen(false); }}
-              className="text-[9.5px] tracking-[0.22em] uppercase text-[#6d6d88] hover:text-white"
+              className="text-[9.5px] tracking-[0.22em] uppercase text-[#6d6d88] hover:text-white tap-h"
             >
               clear all
             </button>
@@ -80,14 +83,14 @@ export default function ProfilesDropdown({
                     <button
                       type="button"
                       onClick={() => { onLoad(p); setProfilesOpen(false); }}
-                      className="text-[#6d6d88] hover:text-white opacity-0 group-hover:opacity-100 px-1.5 py-0.5 text-[12px]"
+                      className="text-[#6d6d88] hover:text-white opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 tap px-1.5 py-0.5 text-[12px]"
                       title="Load into form (don't enter)"
                     >✎</button>
                   )}
                   <button
                     type="button"
                     onClick={() => onForget(key)}
-                    className="text-[#6d6d88] hover:text-[#ff6a6a] opacity-0 group-hover:opacity-100 px-1.5 py-0.5 text-[14px] leading-none"
+                    className="text-[#6d6d88] hover:text-[#ff6a6a] opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 tap px-1.5 py-0.5 text-[14px] leading-none"
                     title="Forget"
                   >×</button>
                 </div>

@@ -11,7 +11,9 @@ export default function ViewToggle() {
   const view = useStore(s => s.view);
   const setView = useStore(s => s.setView);
   return (
-    <div className="absolute top-16 left-3 flex flex-col gap-1">
+    // Below lg the toggle moves to a row above the bottom planet strip so it
+    // does not sit on the HUD title block (which wraps on narrow screens).
+    <div className="absolute bottom-16 left-3 flex flex-row lg:bottom-auto lg:top-16 lg:flex-col gap-1">
       {VIEWS.map(v => (
         <button
           key={v.id}

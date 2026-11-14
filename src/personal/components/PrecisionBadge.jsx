@@ -45,9 +45,13 @@ export default function PrecisionBadge() {
     <button
       onClick={openSettings}
       title="Open settings"
-      className={`fixed bottom-3 right-3 z-20 text-[10px] px-2.5 py-1 rounded-full border transition-colors pointer-events-auto ${
+      // sm and up: floats in the bottom-right corner, as always. Phones: it
+      // would sit on top of the charts, so it becomes the last line of the
+      // page instead — a warning stays pinned to the bottom of the screen
+      // (sticky) but still keeps its own space at the end of the page.
+      className={`sm:fixed sm:bottom-3 sm:right-3 max-sm:self-end max-sm:shrink-0 max-sm:mx-3 max-sm:mb-3 z-20 max-w-[calc(100vw-1.5rem)] text-[10px] px-2.5 py-1 rounded-full border transition-colors pointer-events-auto ${
         tone === 'warn'
-          ? 'bg-[#1a110a]/90 border-[#d79b3a]/40 text-[#d79b3a]'
+          ? 'max-sm:sticky max-sm:bottom-3 bg-[#1a110a]/90 border-[#d79b3a]/40 text-[#d79b3a]'
           : 'bg-[#0a0a14]/90 border-white/10 text-[#9b9bbd] hover:text-[#e6e6f0]'
       }`}
     >

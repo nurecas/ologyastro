@@ -72,9 +72,12 @@ export default function SouthIndianChart({ chart, size = 420 }) {
               <rect x={cx - 50} y={cy - 50} width="100" height="100"
                     fill="rgba(245,214,128,0.06)" stroke="rgba(245,214,128,0.6)" strokeWidth="1.4" />
             )}
-            <text x={cx} y={cy - 32} textAnchor="middle" fontSize="9"
+            <text x={cx} y={cy - 32} textAnchor="middle" fontSize="9" className="vc-small vc-cell"
                   fill="rgba(155,155,189,0.65)" letterSpacing="0.18em" fontFamily="Inter, sans-serif">
-              {RASHIS[sign].en} · H{house}
+              {/* Phones: 3-letter sign name, so the label can be larger and still fit its cell. */}
+              <tspan className="sm:hidden">{RASHIS[sign].en.slice(0, 3)}</tspan>
+              <tspan className="hidden sm:inline">{RASHIS[sign].en}</tspan>
+              {' '}· H{house}
             </text>
             <text x={cx} y={cy - 14} textAnchor="middle" fontSize="16" fill="#f5d680" fontFamily="Cormorant Garamond, serif">
               {RASHIS[sign].glyph}
@@ -85,7 +88,7 @@ export default function SouthIndianChart({ chart, size = 420 }) {
                 x={cx}
                 y={cy + 4 + i * 14}
                 textAnchor="middle"
-                fontSize="12"
+                fontSize="12" className="vc-planet"
                 fill={p.dignity === 'exalted' ? '#fff8dd'
                     : p.dignity === 'debilitated' ? '#ff9a9a'
                     : p.dignity === 'own' || p.dignity === 'mooltrikona' ? '#f5d680'
@@ -101,7 +104,7 @@ export default function SouthIndianChart({ chart, size = 420 }) {
                 x={cx}
                 y={cy + 4 + (planets.length + i) * 14}
                 textAnchor="middle"
-                fontSize="9"
+                fontSize="9" className="vc-small"
                 fill="#d8caff"
                 fillOpacity="0.65"
                 fontFamily="Inter, sans-serif"
@@ -111,7 +114,7 @@ export default function SouthIndianChart({ chart, size = 420 }) {
               </text>
             ))}
             {isLagna && (
-              <text x={cx} y={cy + 38} textAnchor="middle" fontSize="9"
+              <text x={cx} y={cy + 38} textAnchor="middle" fontSize="9" className="vc-small"
                     fill="#d79b3a" letterSpacing="0.2em" fontFamily="Inter, sans-serif">
                 LAGNA
               </text>

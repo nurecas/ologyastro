@@ -31,8 +31,8 @@ export default function Rashi() {
   const ChartCmp = format === 'south' ? SouthIndianChart : NorthIndianChart;
 
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1400px] mx-auto">
-      <header className="mb-3 flex items-baseline justify-between">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1400px] mx-auto">
+      <header className="mb-3 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 lg:gap-0">
         <div>
           <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">Rashi · Janma Kundali</h2>
           <p className="text-[13px] text-[#9b9bbd] mt-1 max-w-3xl leading-relaxed">
@@ -47,7 +47,7 @@ export default function Rashi() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
         <div className="space-y-4">
-          <div className="bg-[#0c0c18] border border-white/10 rounded-md p-4 flex justify-center">
+          <div className="bg-[#0c0c18] border border-white/10 rounded-md -mx-2 p-1.5 sm:mx-0 sm:p-4 flex justify-center">
             <ChartCmp chart={chart} size={420} />
           </div>
           {chart.panchang && <PanchangCard panchang={chart.panchang} />}
@@ -152,7 +152,7 @@ function PanchangCard({ panchang }) {
   return (
     <div className="bg-[#0c0c18] border border-white/10 rounded-md p-4">
       <div className="text-[11px] tracking-[0.25em] uppercase text-[#9b9bbd] mb-3">Panchang at birth</div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12.5px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[12.5px]">
         {rows.map(([label, val]) => (
           <div key={label} className="flex items-baseline justify-between border-b border-dashed border-white/5 pb-1">
             <span className="text-[#9b9bbd] italic font-serif">{label}</span>

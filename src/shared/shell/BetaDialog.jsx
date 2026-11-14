@@ -3,9 +3,9 @@
 // dismissed flag is stored in a SHARED localStorage key so dismissing in
 // one system carries across all the others.
 //
-// On narrow viewports (<= 820px wide), the dialog also notes that Ology
-// is built for desktop / tablet-landscape — combining the previous
-// "MobileNotice" component into one prompt.
+// On narrow viewports (< 820px wide), the dialog also adds a short note on
+// how the layout adapts to small screens (wide tables and tab rows scroll
+// inside their own panel). The old blocking "MobileNotice" is gone.
 
 import React, { useEffect, useState } from 'react';
 
@@ -51,7 +51,7 @@ export default function BetaDialog() {
       <div
         role="dialog"
         aria-labelledby="beta-dialog-title"
-        className="w-full max-w-[480px] bg-[#0c0c18] border border-[#f5d680]/30 rounded-lg shadow-2xl p-6 text-[#e6e6f0]"
+        className="w-full max-w-[480px] max-h-full overflow-y-auto bg-[#0c0c18] border border-[#f5d680]/30 rounded-lg shadow-2xl p-5 sm:p-6 text-[#e6e6f0]"
       >
         <div
           id="beta-dialog-title"
@@ -84,9 +84,9 @@ export default function BetaDialog() {
           </p>
           {narrow && (
             <p className="border-t border-white/10 pt-3 text-[#d79b3a] italic font-serif">
-              Ology is densest on a desktop or tablet in landscape mode. The
-              mobile view will work, but some panels may shrink below their
-              ideal density.
+              Ology works on phones, tablets and desktops alike. On a small
+              screen the panels stack into one column, and wide tables or
+              tab rows scroll sideways inside their own frame.
             </p>
           )}
         </div>
@@ -94,7 +94,7 @@ export default function BetaDialog() {
         <div className="flex items-center justify-end gap-2 mt-5">
           <button
             onClick={dismiss}
-            className="text-[12px] tracking-[0.18em] uppercase font-medium px-5 py-2 rounded bg-[#f5d680] text-[#0b0b15] hover:bg-[#fff3c0] transition-colors"
+            className="text-[12px] tracking-[0.18em] uppercase font-medium px-5 py-2 tap-h rounded bg-[#f5d680] text-[#0b0b15] hover:bg-[#fff3c0] transition-colors"
           >
             I understand
           </button>

@@ -13,7 +13,6 @@ import SettingsDrawer from './components/SettingsDrawer.jsx';
 import PrecisionBadge from './components/PrecisionBadge.jsx';
 import KeyboardShortcuts from './components/KeyboardShortcuts.jsx';
 import PredictiveMode from './components/PredictiveMode.jsx';
-import MobileNotice from './components/MobileNotice.jsx';
 import BetaDialog from '../shared/shell/BetaDialog.jsx';
 import TestRunner from './test/Runner.jsx';
 
@@ -62,19 +61,22 @@ export default function App() {
   }
 
   if (!hasEntered || !natal) return <>
-    <BirthForm /><InfoPopover /><KeyboardShortcuts /><MobileNotice /><BetaDialog />
+    <BirthForm /><InfoPopover /><KeyboardShortcuts /><BetaDialog />
     {testMode && <TestRunner onClose={closeTest} />}
   </>;
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-[#080810] text-[#e6e6f0]">
+    // lg+: fixed full-height app frame, the active view scrolls inside <main>.
+    // Below lg the whole page scrolls instead, so the nav rows scroll away
+    // and short landscape phones keep the full height for the chart.
+    <div className="w-full min-h-screen lg:h-screen flex flex-col bg-[#080810] text-[#e6e6f0]">
       <ModeNav />
       {/* NatalSummary only appears in Profile mode; elsewhere we surrender
           the vertical strip so the active view (wheel / graph / globe) has
           maximum real estate. Chart actions (Change, Download) are in ModeNav
           and always available. */}
       {mode === 'profile' && <NatalSummary />}
-      <main className="flex-1 min-h-0 overflow-auto">
+      <main className="flex-1 lg:min-h-0 lg:overflow-auto">
         {mode === 'profile'    && <ChartProfile />}
         {mode === 'vectors'    && <LifeVectorsGraph />}
         {mode === 'wheel'      && <NatalWheel />}
@@ -86,7 +88,6 @@ export default function App() {
       <SettingsDrawer />
       <PrecisionBadge />
       <KeyboardShortcuts />
-      <MobileNotice />
       <BetaDialog />
       {testMode && <TestRunner onClose={closeTest} />}
     </div>

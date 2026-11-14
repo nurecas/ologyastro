@@ -31,7 +31,7 @@ const SHORTCUTS = [
 
 function Row({ label, children, sub }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2">
+    <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-x-4 gap-y-2 py-2">
       <div className="min-w-0">
         <div className="text-[13px] text-[#e6e6f0]">{label}</div>
         {sub && <div className="text-[10px] text-[#6d6d88] mt-0.5">{sub}</div>}
@@ -61,7 +61,7 @@ function Toggle({ on, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${on ? 'bg-[#f5d680]/80 justify-end' : 'bg-white/10 justify-start'}`}
+      className={`tap-none relative after:content-[''] after:absolute after:-inset-x-1 after:-inset-y-2.5 w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${on ? 'bg-[#f5d680]/80 justify-end' : 'bg-white/10 justify-start'}`}
       aria-pressed={on}
     >
       <span className="w-4 h-4 rounded-full bg-[#080810]" />
@@ -138,7 +138,7 @@ export default function SettingsDrawer() {
           <div className="font-serif tracking-[0.2em] text-[13px] text-[#f5d680]">SETTINGS</div>
           <button
             onClick={closeSettings}
-            className="text-[#9b9bbd] hover:text-white text-lg leading-none"
+            className="text-[#9b9bbd] hover:text-white text-lg leading-none inline-flex items-center justify-center tap"
             aria-label="Close settings"
           >×</button>
         </header>

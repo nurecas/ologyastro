@@ -41,7 +41,7 @@ export default function Scrubber() {
   }, [playing, speed, startYear, endYear]);
 
   return (
-    <div className="flex items-center gap-3 text-[11px] tracking-widest uppercase text-[#cfcfe0]/80">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] tracking-widest uppercase text-[#cfcfe0]/80">
       <button
         onClick={toggle}
         className="btn-ghost"

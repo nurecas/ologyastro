@@ -27,7 +27,7 @@ export function Toggle({ on, onClick, ariaLabel }) {
       onClick={onClick}
       aria-pressed={on}
       aria-label={ariaLabel}
-      className={`w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${
+      className={`tap-none relative after:content-[''] after:absolute after:-inset-x-1 after:-inset-y-2.5 w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${
         on ? 'bg-[#f5d680]/80 justify-end' : 'bg-white/10 justify-start'
       }`}
     >

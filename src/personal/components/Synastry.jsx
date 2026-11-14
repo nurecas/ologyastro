@@ -34,7 +34,11 @@ function BiWheel({ natalA, natalB }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       const cx = W / 2, cy = H / 2;
-      const Rout   = Math.max(140, Math.min(W, H) / 2 - 90);
+      // Original geometry (outer ring at least 140 px) wherever it fits. On a
+      // smaller canvas — a narrow phone — the wheel scales down so the outer
+      // ring and its 14 px glyph halos stay inside the canvas.
+      const half   = Math.min(W, H) / 2;
+      const Rout   = Math.min(Math.max(140, half - 90), Math.max(80, half - 18));
       const Rmid   = Rout - 40;
       const Rinner = Rmid - 40;
       const asc = natalA.ascDeg;
@@ -209,7 +213,7 @@ export default function Synastry() {
 
   if (!natalB) {
     return (
-      <div className="w-full p-6 text-[#e6e6f0] max-w-[1000px] mx-auto">
+      <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1000px] mx-auto">
         <header className="mb-4">
           <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">
             Synastry
@@ -226,15 +230,15 @@ export default function Synastry() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col p-6 text-[#e6e6f0]">
+    <div className="w-full lg:h-full flex flex-col p-4 sm:p-6 text-[#e6e6f0]">
       <header className="mb-2">
-        <div className="flex items-baseline justify-between gap-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
           <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">
             Synastry
           </h2>
           <div className="flex items-center gap-3">
             {advanced && (
-              <label className="text-[11px] text-[#9b9bbd] flex items-center gap-2 cursor-pointer">
+              <label className="text-[11px] text-[#9b9bbd] flex items-center gap-2 cursor-pointer tap-h">
                 <input
                   type="checkbox"
                   checked={davisonOn}
@@ -261,7 +265,7 @@ export default function Synastry() {
 
       {/* Summary badge */}
       {summary && (
-        <div className="mb-3 flex items-center gap-3 text-[12.5px]">
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]">
           <span className="text-[#9b9bbd]">Overall tone:</span>
           <span className="font-serif text-[18px]" style={{ color: TONE_COLOR[summary.tone] }}>
             {summary.tone}
@@ -294,8 +298,8 @@ export default function Synastry() {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 grid grid-cols-[1fr_320px_300px] gap-3">
-        <div className="bg-[#0a0a14] border border-white/5 rounded-md overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_320px_300px] gap-3">
+        <div className="bg-[#0a0a14] border border-white/5 rounded-md overflow-hidden md:col-span-2 lg:col-span-1 h-[calc(100vw-2rem)] max-h-[78vh] min-h-[300px] lg:h-auto lg:max-h-none lg:min-h-0">
           <BiWheel natalA={natalA} natalB={natalB} />
         </div>
 

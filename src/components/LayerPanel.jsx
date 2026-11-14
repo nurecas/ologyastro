@@ -7,12 +7,13 @@ export default function LayerPanel() {
   const setLayerMix      = useStore(s => s.setLayerMix);
   const masterCoh        = useStore(s => s.masterCoherence);
   const toggleMasterCoh  = useStore(s => s.toggleMasterCoherence);
-  const [open, setOpen]  = useState(true);
+  // Starts collapsed on phone-width screens so it does not cover the field.
+  const [open, setOpen]  = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
 
   return (
     <div
-      className={`absolute top-16 right-3 bg-[#0b0b15]/85 backdrop-blur-md border border-white/5 rounded-md text-[#d8d8e8] transition-all duration-300`}
-      style={{ width: open ? 260 : 40 }}
+      className={`absolute top-16 [@media(pointer:coarse)]:top-20 right-3 max-w-[calc(100vw-1.5rem)] max-sm:max-h-[60vh] max-sm:overflow-y-auto bg-[#0b0b15]/85 backdrop-blur-md border border-white/5 rounded-md text-[#d8d8e8] transition-all duration-300`}
+      style={{ width: open ? 260 : 42 }}
     >
       <button
         onClick={() => setOpen(!open)}
@@ -34,7 +35,7 @@ export default function LayerPanel() {
           ))}
 
           <div className="pt-2 mt-2 border-t border-white/5">
-            <label className="flex items-center gap-2 text-[10px] tracking-[0.2em] uppercase cursor-pointer select-none">
+            <label className="flex items-center gap-2 tap-h text-[10px] tracking-[0.2em] uppercase cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={masterCoh}

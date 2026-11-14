@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
+import { attachGlobeGestures, fitFov } from '../shared/lib/globeGestures.js';
 import { useStore } from '../store.js';
 import {
   AMPLITUDE_ARRAY, PLANETS, decimalYearToDate,
@@ -160,7 +161,9 @@ export default function GlobeView() {
     scene.background = new THREE.Color(0x080810);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+    // fitFov widens the vertical FOV on portrait canvases (phones) so the whole
+    // globe fits; landscape canvases keep the original 45°.
+    const camera = new THREE.PerspectiveCamera(fitFov(container.clientWidth / container.clientHeight), container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.set(0, 0, 2.6);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -234,30 +237,8 @@ export default function GlobeView() {
     const linesGroup = new THREE.Group();  scene.add(linesGroup);  linesGroupRef.current = linesGroup;
     const citiesGroup = new THREE.Group(); scene.add(citiesGroup); citiesGroupRef.current = citiesGroup;
 
-    // Input: drag to rotate, wheel to zoom.
-    const onDown = (e) => {
-      rotState.current.dragging = true;
-      rotState.current.px = e.clientX;
-      rotState.current.py = e.clientY;
-    };
-    const onMove = (e) => {
-      if (!rotState.current.dragging) return;
-      const dx = e.clientX - rotState.current.px;
-      const dy = e.clientY - rotState.current.py;
-      rotState.current.px = e.clientX;
-      rotState.current.py = e.clientY;
-      rotState.current.lon -= dx * 0.005;
-      rotState.current.lat = Math.max(-1.3, Math.min(1.3, rotState.current.lat + dy * 0.005));
-    };
-    const onUp = () => { rotState.current.dragging = false; };
-    const onWheel = (e) => {
-      e.preventDefault();
-      rotState.current.zoom = Math.max(1.3, Math.min(6, rotState.current.zoom + e.deltaY * 0.003));
-    };
-    renderer.domElement.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+    // Input: drag to rotate, wheel or two-finger pinch to zoom.
+    const detachGestures = attachGlobeGestures(renderer.domElement, rotState.current);
 
     // Hover tooltip: raycast against the sphere to get lat/lon.
     const ray = new THREE.Raycaster();
@@ -350,6 +331,7 @@ export default function GlobeView() {
       const W = container.clientWidth, H = container.clientHeight;
       renderer.setSize(W, H);
       camera.aspect = W / H;
+      camera.fov = fitFov(camera.aspect);
       camera.updateProjectionMatrix();
     };
     window.addEventListener('resize', onResize);
@@ -370,10 +352,7 @@ export default function GlobeView() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      renderer.domElement.removeEventListener('pointerdown', onDown);
-      renderer.domElement.removeEventListener('wheel', onWheel);
+      detachGestures();
       renderer.domElement.removeEventListener('pointermove', onHoverMove);
       renderer.domElement.removeEventListener('pointerleave', onHoverLeave);
       placeholder.dispose();

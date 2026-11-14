@@ -44,7 +44,10 @@ function SimpleWheel({ planets, size = 420 }) {
     return [cx + rr * Math.cos(theta), cy + rr * Math.sin(theta)];
   };
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block mx-auto">
+    // In the fixed-height desktop frame this wheel gives way when the column
+    // is short of room; the 300 px floor keeps it readable (it used to shrink
+    // to ~120 px on a 1280 × 720 laptop) and the column scrolls instead.
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block mx-auto max-w-full h-auto min-h-[300px]">
       <circle cx={cx} cy={cy} r={r}        fill="none" stroke="rgba(245,214,128,0.25)" strokeWidth="1" />
       <circle cx={cx} cy={cy} r={r * 0.78} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
       {/* Sign spokes */}
@@ -70,7 +73,7 @@ function SimpleWheel({ planets, size = 420 }) {
             <text x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="14" fill="#f5d680">
               {PLANET_GLYPH[p.name] || '•'}
             </text>
-            <text x={x} y={y + 14} textAnchor="middle" fontSize="8" fill="#9b9bbd">
+            <text x={x} y={y + 14} textAnchor="middle" fontSize="8" fill="#9b9bbd" className="sw-deg">
               {p.lonDeg.toFixed(0)}°
             </text>
           </g>
@@ -124,7 +127,7 @@ export default function PredictiveMode() {
   const activeInfo = PREDICTIVE_INFO[TYPES.find(t => t.id === predictiveType)?.infoKey || 'progressions'];
 
   return (
-    <div className="flex flex-col h-full px-6 py-4 gap-4 overflow-auto">
+    <div className="flex flex-col h-full px-4 sm:px-6 py-4 gap-4 overflow-auto">
       <header>
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">
           Predictive
@@ -165,7 +168,7 @@ export default function PredictiveMode() {
             type="number"
             value={predictiveYear}
             onChange={e => setPredictiveYear(e.target.value)}
-            className="w-20 px-2 py-0.5 bg-[#0a0a14] border border-white/10 text-[#e6e6f0] rounded"
+            className="w-20 px-2 py-0.5 tap-h bg-[#0a0a14] border border-white/10 text-[#e6e6f0] rounded"
           />
         </div>
       </div>
@@ -175,7 +178,7 @@ export default function PredictiveMode() {
       {chart && chart.planets ? (
         <>
           <SimpleWheel planets={chart.planets.filter(p => p.classical !== false && !p.calculatedPoint) || chart.planets} />
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-1 text-[11px] mt-2">
+          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-1 text-[11px] mt-2">
             {chart.planets.map(p => (
               <div key={p.name} className="flex items-center gap-2">
                 <span className="text-[#f5d680] w-5">{PLANET_GLYPH[p.name] || '•'}</span>

@@ -33,7 +33,7 @@ export default function SettingsShell({ open, onClose, accent = '#f5d680', short
         className="absolute right-0 top-0 h-full w-full sm:w-[420px] bg-[#0b0b15] border-l border-white/10 shadow-2xl text-[#e6e6f0] overflow-y-auto p-5">
         <div className="flex items-baseline justify-between mb-4">
           <div className="font-serif text-[18px] tracking-[0.18em]" style={{ color: accent }}>SETTINGS</div>
-          <button onClick={onClose} className="text-[#9b9bbd] hover:text-white" aria-label="Close settings">✕</button>
+          <button onClick={onClose} className="text-[#9b9bbd] hover:text-white inline-flex items-center justify-center tap" aria-label="Close settings">✕</button>
         </div>
 
         {/* Per-system settings panels */}
@@ -67,12 +67,12 @@ export default function SettingsShell({ open, onClose, accent = '#f5d680', short
 // Reusable Row helper used by per-system SettingsPanels for label/control pairs.
 export function SettingsRow({ label, sub, children }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2">
+    <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-x-4 gap-y-2 py-2">
       <div className="min-w-0">
         <div className="text-[13px] text-[#e6e6f0]">{label}</div>
         {sub && <div className="text-[10px] text-[#6d6d88] mt-0.5">{sub}</div>}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="shrink-0 max-w-full">{children}</div>
     </div>
   );
 }
@@ -82,7 +82,7 @@ export function SettingsPill({ active, onClick, accent = '#f5d680', children }) 
   return (
     <button
       onClick={onClick}
-      className={`text-[11px] px-2.5 py-1 rounded border transition-colors ${
+      className={`text-[11px] px-2.5 py-1 tap rounded border transition-colors ${
         active
           ? `bg-[#f5d680]/10 border-[#f5d680]/50 text-[#f5d680]`
           : 'bg-transparent border-white/15 text-[#9b9bbd] hover:text-[#e6e6f0]'

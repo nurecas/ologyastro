@@ -2,10 +2,12 @@
 // SystemNav above, top mode-pill row, download menu wired to the
 // gematria LLM export.
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGematria } from './store.js';
 import SystemNav from '../shared/shell/SystemNav.jsx';
 import DownloadMenu from '../shared/shell/DownloadMenu.jsx';
+import useViewportClamp from '../shared/lib/useViewportClamp.js';
+import useActiveTabInView from '../shared/lib/useActiveTabInView.js';
 import Word, { GematriaInputBar } from './components/Word.jsx';
 import Compare from './components/Compare.jsx';
 import DateNumerology from './components/DateNumerology.jsx';
@@ -28,6 +30,10 @@ export default function App() {
   const birth     = useGematria(s => s.birth);
   const [focus, setFocus]       = useState('');
   const [focusOpen, setFocusOpen] = useState(false);
+  const focusRef = useRef(null);
+  useViewportClamp(focusRef, focusOpen);
+  const tabsRef = useRef(null);
+  useActiveTabInView(tabsRef, mode);
 
   // First-mount: if the user came from Western with a birth name set and
   // hasn't yet typed anything in Gematria, pre-fill the Word input with
@@ -57,17 +63,17 @@ export default function App() {
       <SystemNav activeId="gematria" />
 
       {/* Top nav */}
-      <nav className="bg-[#0b0b15] border-b border-white/5 px-6 py-2 flex items-center justify-between">
-        <div className="flex gap-1">
+      <nav className="bg-[#0b0b15] border-b border-white/5 px-3 sm:px-6 py-2 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
+        <div ref={tabsRef} className="flex gap-1 overflow-x-auto no-scrollbar min-w-0 max-w-full">
           {MODES.map(m => (
             <button
               key={m.id}
               onClick={() => setMode(m.id)}
-              className={`btn-ghost ${mode === m.id ? 'active' : ''}`}
+              className={`btn-ghost shrink-0 whitespace-nowrap ${mode === m.id ? 'active' : ''}`}
             >{m.label}</button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 ml-auto">
           <div className="relative">
             <button
               onClick={() => setFocusOpen(v => !v)}
@@ -77,7 +83,7 @@ export default function App() {
               {focus ? '✦ Focus set' : '✦ Focus'}
             </button>
             {focusOpen && (
-              <div className="absolute right-0 top-full mt-1 z-30 w-72 bg-[#0b0b15] border border-white/10 rounded-md shadow-2xl p-3">
+              <div ref={focusRef} className="absolute right-0 top-full mt-1 z-30 w-72 bg-[#0b0b15] border border-white/10 rounded-md shadow-2xl p-3">
                 <div className="text-[10px] tracking-[0.22em] uppercase text-[#9b9bbd] mb-1">Focus for AI reading</div>
                 <input
                   type="text"
@@ -99,11 +105,11 @@ export default function App() {
       </nav>
 
       {/* Header */}
-      <header className="text-center pt-12 pb-6 px-6">
-        <div className="text-[#d79b3a]/70 text-[12px] tracking-[0.5em] uppercase font-serif mb-3">
+      <header className="text-center pt-8 sm:pt-12 pb-6 px-4 sm:px-6">
+        <div className="text-[#d79b3a]/70 text-[12px] tracking-[0.25em] sm:tracking-[0.5em] uppercase font-serif mb-3">
           ✦ Pythagorean · Mispar · Isopsephy · Abjad ✦
         </div>
-        <h1 className="font-serif font-light text-[64px] leading-none tracking-tight bg-gradient-to-b from-[#fff8dd] to-[#f5d680] bg-clip-text text-transparent">
+        <h1 className="font-serif font-light text-[48px] sm:text-[64px] leading-none tracking-tight bg-gradient-to-b from-[#fff8dd] to-[#f5d680] bg-clip-text text-transparent">
           Numerology
         </h1>
         <p className="font-serif italic text-[16px] text-[#9b9bbd] mt-2 tracking-wide">
@@ -111,7 +117,7 @@ export default function App() {
         </p>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 pb-20">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pb-20">
         {mode === 'word' && (
           <>
             <GematriaInputBar />

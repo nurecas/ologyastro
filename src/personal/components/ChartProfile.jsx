@@ -90,7 +90,7 @@ export default function ChartProfile() {
   const hasAnyPattern = Object.values(analysis.patterns).some(arr => arr.length);
 
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1400px] mx-auto">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1400px] mx-auto">
       <header className="mb-5">
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">
           Profile
@@ -104,7 +104,7 @@ export default function ChartProfile() {
       </header>
 
       {/* Three Anchors ------------------------------------------------------- */}
-      <section className="grid grid-cols-3 gap-3 mb-5">
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         {[
           { label: 'Sun',     sign: analysis.sunSign,    meta: sunMeta,    sub: 'core identity', planet: 'Sun' },
           { label: 'Moon',    sign: analysis.moonSign,   meta: moonMeta,   sub: 'inner world',   planet: 'Moon' },
@@ -135,7 +135,7 @@ export default function ChartProfile() {
         ))}
       </section>
 
-      <div className="grid grid-cols-3 gap-5 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-5">
         {/* Elements */}
         <div className="bg-[#0c0c18] border border-white/10 rounded-md p-4">
           <BalanceBars data={analysis.elements} colors={ELEMENT_COLOR} label="Element Balance" />
@@ -173,7 +173,7 @@ export default function ChartProfile() {
       </div>
 
       {/* Dominants + Patterns in a two-column grid */}
-      <section className="grid grid-cols-[320px_1fr] gap-5">
+      <section className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-5">
         {/* Dominants */}
         <div className="bg-[#0c0c18] border border-white/10 rounded-md p-4 space-y-4">
           <div>
@@ -240,7 +240,7 @@ export default function ChartProfile() {
               tight formations.
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <PatternCard kind="stellium"    items={analysis.patterns.stelliums} />
             <PatternCard kind="grandTrine"  items={analysis.patterns.grandTrines} />
             <PatternCard kind="tSquare"     items={analysis.patterns.tSquares} />
@@ -267,7 +267,7 @@ function FirstVisitHint() {
       <span>Click any element, planet, or card for its meaning.</span>
       <button
         onClick={() => dismissHint('profileIntro')}
-        className="ml-4 text-[#6d6d88] hover:text-[#e6e6f0]"
+        className="ml-4 text-[#6d6d88] hover:text-[#e6e6f0] tap"
       >Got it</button>
     </div>
   );

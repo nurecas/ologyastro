@@ -254,7 +254,7 @@ export default function Word() {
       {/* Y-as-vowel toggle (English only) */}
       {lang === 'english' && (
         <div className="text-center pt-6">
-          <label className="inline-flex items-center gap-2 cursor-pointer text-[12px] text-[#9b9bbd]">
+          <label className="inline-flex items-center gap-2 cursor-pointer text-[12px] text-[#9b9bbd] tap-h">
             <input type="checkbox" checked={useY} onChange={e => setUseY(e.target.checked)} />
             Treat “Y” as a vowel
           </label>
@@ -280,9 +280,9 @@ export function GematriaInputBar() {
     'var(--font-serif, "Cormorant Garamond", serif)';
 
   return (
-    <div className="bg-[#0c0c18] border border-white/10 rounded-lg p-5 mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex gap-1">
+    <div className="bg-[#0c0c18] border border-white/10 rounded-lg p-4 sm:p-5 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="flex flex-wrap gap-1">
           {LANGS.map(l => (
             <button
               key={l.id}
@@ -296,7 +296,7 @@ export function GematriaInputBar() {
           ))}
         </div>
         {(lang === 'hebrew' || lang === 'greek' || lang === 'arabic') && (
-          <label className="text-[10px] tracking-[0.15em] uppercase text-[#9b9bbd] flex items-center gap-2 cursor-pointer">
+          <label className="text-[10px] tracking-[0.15em] uppercase text-[#9b9bbd] flex items-center gap-2 cursor-pointer tap-h">
             <input type="checkbox" checked={usePron} onChange={e => setUsePron(e.target.checked)} />
             Input by pronunciation
           </label>
@@ -307,7 +307,7 @@ export function GematriaInputBar() {
         value={input}
         onChange={e => setInput(e.target.value)}
         placeholder={PLACEHOLDERS[lang]}
-        className="w-full bg-black/30 border border-white/10 rounded-md px-5 py-4 text-[24px] text-center text-[#e6e6f0] outline-none focus:border-[#d79b3a]/60"
+        className="w-full bg-black/30 border border-white/10 rounded-md px-3 sm:px-5 py-4 text-[24px] text-center text-[#e6e6f0] outline-none focus:border-[#d79b3a]/60"
         style={{ direction: inputDir, fontFamily }}
         autoFocus
       />

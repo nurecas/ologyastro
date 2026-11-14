@@ -14,19 +14,21 @@ import { SYSTEMS, systemUrl } from '../systems.js';
 export default function SystemNav({ activeId }) {
   const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
   return (
-    <div className="flex items-center gap-2 px-3 sm:px-6 py-2 border-b border-white/5 bg-[#0a0a14]/60 w-full max-w-full overflow-hidden">
+    <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2 gap-y-1.5 px-3 sm:px-6 py-2 border-b border-white/5 bg-[#0a0a14]/60 w-full max-w-full overflow-hidden">
       {/* OLOGY logo — leftmost, clickable, takes the user to the site root. */}
       <a
         href={base}
-        className="font-serif text-[14px] sm:text-[16px] tracking-[0.18em] sm:tracking-[0.22em] text-[#f5d680] hover:text-[#fff8dd] transition-colors mr-2 sm:mr-3 select-none shrink-0"
+        className="font-serif text-[16px] tracking-[0.18em] sm:tracking-[0.22em] text-[#f5d680] hover:text-[#fff8dd] transition-colors mr-2 sm:mr-3 select-none shrink-0 inline-flex items-center tap-h"
         title="Back to Ology home"
       >
         OLOGY
       </a>
-      {/* System pills — horizontally scrollable on narrow screens. min-w-0 lets
-          this flex child shrink below its content width so overflow-x-auto can
-          actually scroll it, instead of forcing the whole bar past the viewport. */}
-      <div className="flex items-center gap-1.5 text-[10px] sm:text-[10.5px] tracking-[0.18em] sm:tracking-[0.22em] uppercase overflow-x-auto no-scrollbar min-w-0 flex-1 -mx-1 px-1">
+      {/* System pills. Phones: their own full-width second row (order-last)
+          with tighter tracking so all four fit from 320 px up. sm+: inline
+          after the logo, horizontally scrollable if ever too wide. min-w-0
+          lets this flex child shrink below its content width so overflow-x-auto
+          can scroll it instead of forcing the whole bar past the viewport. */}
+      <div className="order-last sm:order-none w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 text-[10px] sm:text-[10.5px] tracking-normal min-[360px]:tracking-[0.06em] sm:tracking-[0.22em] uppercase overflow-x-auto no-scrollbar min-w-0 sm:flex-1 sm:-mx-1 sm:px-1">
         {SYSTEMS.filter(s => s.enabled || s.id === activeId).map(s => {
           const active = s.id === activeId;
           const cls = active
@@ -36,7 +38,7 @@ export default function SystemNav({ activeId }) {
             <a
               key={s.id}
               href={systemUrl(s)}
-              className={`px-2.5 sm:px-3 py-1 rounded border transition-colors whitespace-nowrap shrink-0 ${cls}`}
+              className={`px-1.5 min-[360px]:px-2 sm:px-3 py-1 rounded border transition-colors whitespace-nowrap shrink-0 inline-flex items-center justify-center tap-h ${cls}`}
               title={`Read this birth as ${s.label}`}
             >
               {s.label}
@@ -49,7 +51,7 @@ export default function SystemNav({ activeId }) {
       <a
         href="https://github.com/nurecas/ologyastro"
         target="_blank" rel="noopener noreferrer"
-        className="ml-auto shrink-0 flex items-center gap-1.5 text-[10px] sm:text-[10.5px] tracking-[0.18em] sm:tracking-[0.22em] uppercase text-[#9b9bbd] hover:text-[#f5d680] border border-white/10 hover:border-[#f5d680]/40 rounded px-2.5 sm:px-3 py-1 transition-colors"
+        className="ml-auto shrink-0 flex items-center justify-center gap-1.5 tap text-[10px] sm:text-[10.5px] tracking-[0.18em] sm:tracking-[0.22em] uppercase text-[#9b9bbd] hover:text-[#f5d680] border border-white/10 hover:border-[#f5d680]/40 rounded px-2.5 sm:px-3 py-1 transition-colors"
         title="View source on GitHub — Ology is open source"
       >
         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">

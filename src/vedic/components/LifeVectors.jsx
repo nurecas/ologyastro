@@ -22,6 +22,10 @@ export default function LifeVectors() {
   const [hover, setHover] = useState(null);
   const svgRef = useRef(null);
   const [w, setW] = useState(1200);
+  // Axis labels: 11 px floor when the graph is phone-narrow or on touch screens (drawn 1:1 in
+  // CSS px); unchanged above 640 px.
+  const coarse = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+  const afs = (n) => (w < 640 || coarse ? Math.max(11, n) : n);
 
   // Track the SVG's own width for ALL reflow causes (container, scrollbar
   // gutter, browser zoom) — the hover math depends on rect.width === w.
@@ -109,7 +113,7 @@ export default function LifeVectors() {
   if (!chart) return null;
 
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1400px] mx-auto">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1400px] mx-auto">
       <header className="mb-4">
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">Life Vectors</h2>
         <p className="text-[13px] text-[#9b9bbd] mt-1 max-w-3xl leading-relaxed">
@@ -152,7 +156,7 @@ export default function LifeVectors() {
             </button>
             <button
               onClick={(e) => setInfo({ vector: v, x: e.clientX, y: e.clientY })}
-              className="text-[11px] px-1.5 py-1 text-[#6d6d88] hover:text-white border-l border-white/10"
+              className="text-[11px] px-1.5 py-1 tap text-[#6d6d88] hover:text-white border-l border-white/10"
               aria-label="What this line means"
               title="What this line means"
             >ℹ</button>
@@ -183,8 +187,8 @@ export default function LifeVectors() {
             <g key={y}>
               <line x1={xOfYear(y)} x2={xOfYear(y)} y1={padT} y2={padT + H_plot}
                     stroke="#d8d8e8" strokeWidth={0.4} opacity={0.12} />
-              <text x={xOfYear(y)} y={H - 26} fontSize={10} fill="#8b8ba5" textAnchor="middle">{y}</text>
-              <text x={xOfYear(y)} y={H - 12} fontSize={9.5} fill="#6d6d88" textAnchor="middle">age {Math.round(ageAt(y))}</text>
+              <text x={xOfYear(y)} y={H - 26} fontSize={afs(10)} fill="#8b8ba5" textAnchor="middle">{y}</text>
+              <text x={xOfYear(y)} y={H - 12} fontSize={afs(9.5)} fill="#6d6d88" textAnchor="middle">age {Math.round(ageAt(y))}</text>
             </g>
           ))}
 
@@ -197,7 +201,7 @@ export default function LifeVectors() {
                 <line x1={x} x2={x} y1={padT} y2={padT + H_plot}
                       stroke="#f5d680" strokeWidth={0.5} opacity={0.22} strokeDasharray="2 4" />
                 <circle cx={x} cy={padT + 3} r={2.4} fill="#f5d680" opacity={0.85} />
-                <text x={x + 3} y={padT + 6} fontSize={9} fill="#d79b3a" opacity={0.85}>{ev.lord}</text>
+                <text x={x + 3} y={padT + 6} fontSize={afs(9)} fill="#d79b3a" opacity={0.85}>{ev.lord}</text>
                 <title>{`${Math.round(ev.year)} — ${ev.label}`}</title>
               </g>
             );
@@ -225,7 +229,7 @@ export default function LifeVectors() {
           {/* Y axis */}
           <g>
             {[1, 0.5, 0].map((v, i) => (
-              <text key={i} x={padL - 6} y={yOfVal(v) + 3} fontSize={10} fill="#6d6d88" textAnchor="end">
+              <text key={i} x={padL - 6} y={yOfVal(v) + 3} fontSize={afs(10)} fill="#6d6d88" textAnchor="end">
                 {v.toFixed(1)}
               </text>
             ))}

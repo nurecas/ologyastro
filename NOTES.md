@@ -23,7 +23,7 @@ src/
       SettingsShell.jsx      # Shared settings-drawer chrome (per-system panels go inside)
       ProfilesDropdown.jsx   # Saved-profiles list, used by every BirthForm
       KeyboardShortcuts.jsx  # Generic shortcut handler (modes, ⌘1..N, ⌘D, ⌘,, Esc)
-      BetaDialog.jsx         # First-load welcome / privacy / mobile notice
+      BetaDialog.jsx         # First-load welcome / privacy / small-screen note
     systems.js               # Registry of all systems + ACTIVE_SYSTEMS feature flag
   personal/                  # Western (the original chart app)
   vedic/                     # Vedic / Jyotish
@@ -139,9 +139,10 @@ Zi-hour boundary tested.
   prominence (was previously a faint outlined state).
 - **Beta dialog** appears on first visit (any system); discloses the
   beta status, local-only computation, and the basic Google Analytics
-  metrics that ARE collected. On narrow viewports, also notes that
-  Ology is densest on desktop / tablet-landscape (combining the
-  previous mobile-only notice into one prompt).
+  metrics that ARE collected. On narrow viewports it adds a short note
+  on how the layout adapts (panels stack; wide tables and tab rows
+  scroll inside their own frame). The old blocking mobile notice has
+  been removed.
 - **Google Analytics** (gtag.js, `G-ZFDHDJZ6NR`) added to all 6 HTMLs.
   No birth data, names, or chart content is sent — only basic
   anonymous metrics.
@@ -189,9 +190,17 @@ headline deltas:
   Transits.
 - **Test mode**: 19 in-browser suites accessed via `#test` / ⌘⇧T.
   Existing 475-assertion Node suite retained for CI.
-- **Responsive**: scoped to desktop + tablets-landscape; a polite
-  dismissible notice fires on narrower viewports; iPad globe
-  touch-to-rotate fixed.
+- **Responsive**: every page works from 320 px phones to 2560 px
+  desktops. Below `lg` (1024 px) multi-column views collapse (3 → 2 → 1),
+  chart canvases get explicit square-ish heights, and nav rows wrap.
+  Touch screens (`pointer: coarse`) get 40 px hit areas and 16 px form
+  text; phone-width screens get an 11 px text floor (see the responsive
+  layer at the end of `src/index.css`). Desktop (≥ 1024 px, fine pointer)
+  is unchanged apart from two fixes: the Predictive wheel keeps a 300 px
+  floor instead of shrinking on short laptop screens, and Vedic / Chinese
+  no longer scroll sideways in browsers with classic scrollbars. Both
+  globes share `src/shared/lib/globeGestures.js` (drag to rotate, wheel or
+  two-finger pinch to zoom).
 
 ## Precision sprint — Swiss Ephemeris backend (2026)
 

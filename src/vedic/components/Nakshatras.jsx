@@ -14,7 +14,7 @@ export default function Nakshatras() {
   const moon = chart.planets.find(p => p.name === 'Moon');
 
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1400px] mx-auto">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1400px] mx-auto">
       <header className="mb-4">
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">Nakshatras · Lunar Mansions</h2>
         <p className="text-[13px] text-[#9b9bbd] mt-1 max-w-3xl leading-relaxed">
@@ -76,7 +76,7 @@ function NakshatraDetail({ idx }) {
   const n = NAKSHATRAS[idx];
   if (!n) return null;
   return (
-    <div className="grid grid-cols-3 gap-4 mt-3 pt-3 border-t border-dashed border-white/10 text-[12px]">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-3 pt-3 border-t border-dashed border-white/10 text-[12px]">
       <div><div className="text-[10px] tracking-[0.18em] uppercase text-[#6d6d88]">Deity</div><div className="text-[#e6e6f0]">{n.deity}</div></div>
       <div><div className="text-[10px] tracking-[0.18em] uppercase text-[#6d6d88]">Symbol</div><div className="text-[#e6e6f0]">{n.symbol}</div></div>
       <div><div className="text-[10px] tracking-[0.18em] uppercase text-[#6d6d88]">Keyword</div><div className="text-[#fff8dd] italic">{n.keyword}</div></div>

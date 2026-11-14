@@ -2,10 +2,12 @@
 // Renders BirthForm if not entered; otherwise the active mode (Rashi / Nakshatras / Dasha)
 // with shared SystemNav + DownloadMenu chrome.
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useVedic } from './store.js';
 import SystemNav from '../shared/shell/SystemNav.jsx';
 import DownloadMenu from '../shared/shell/DownloadMenu.jsx';
+import useViewportClamp from '../shared/lib/useViewportClamp.js';
+import useActiveTabInView from '../shared/lib/useActiveTabInView.js';
 import BirthForm from './components/BirthForm.jsx';
 import Rashi from './components/Rashi.jsx';
 import Nakshatras from './components/Nakshatras.jsx';
@@ -46,6 +48,10 @@ export default function App() {
 
   const [focus, setFocus] = useState('');
   const [focusOpen, setFocusOpen] = useState(false);
+  const focusRef = useRef(null);
+  useViewportClamp(focusRef, focusOpen);
+  const tabsRef = useRef(null);
+  useActiveTabInView(tabsRef, mode);
 
   // Esc handlers (settings drawer; focus dropdown).
   useEffect(() => {
@@ -97,11 +103,11 @@ export default function App() {
   if (!hasEntered || !chart) return <><BirthForm /><SettingsDrawer /><BetaDialog /></>;
 
   return (
-    <div className="w-screen min-h-screen flex flex-col bg-[#080810] text-[#e6e6f0]">
+    <div className="w-full min-h-screen flex flex-col bg-[#080810] text-[#e6e6f0]">
       <SystemNav activeId="vedic" />
 
-      <nav className="bg-[#0b0b15] border-b border-white/5 px-3 sm:px-6 py-2 flex items-center justify-between gap-2">
-        <div className="flex gap-1 overflow-x-auto no-scrollbar -mx-1 px-1 min-w-0">
+      <nav className="bg-[#0b0b15] border-b border-white/5 px-3 sm:px-6 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
+        <div ref={tabsRef} className="flex gap-1 overflow-x-auto no-scrollbar -mx-1 px-1 min-w-0 max-w-[calc(100%+0.5rem)]">
           {MODES.map(m => (
             <button
               key={m.id}
@@ -112,7 +118,7 @@ export default function App() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
           <div className="relative">
             <button
               onClick={() => setFocusOpen(v => !v)}
@@ -121,7 +127,7 @@ export default function App() {
               aria-expanded={focusOpen}
             >{focus ? '✦ Focus set' : '✦ Focus'}</button>
             {focusOpen && (
-              <div className="absolute right-0 top-full mt-1 z-30 w-72 bg-[#0b0b15] border border-white/10 rounded-md shadow-2xl p-3">
+              <div ref={focusRef} className="absolute right-0 top-full mt-1 z-30 w-72 bg-[#0b0b15] border border-white/10 rounded-md shadow-2xl p-3">
                 <div className="text-[10px] tracking-[0.22em] uppercase text-[#9b9bbd] mb-1">Focus for AI reading</div>
                 <input
                   type="text"

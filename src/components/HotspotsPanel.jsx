@@ -38,7 +38,8 @@ export default function HotspotsPanel() {
   const startYear = useStore(s => s.startYear);
   const endYear   = useStore(s => s.endYear);
   const view      = useStore(s => s.view);
-  const [open, setOpen] = useState(true);
+  // Starts collapsed on phone-width screens so it does not cover the globe.
+  const [open, setOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
 
   const date = useMemo(
     () => decimalYearToDate(startYear + (endYear - startYear) * t),
@@ -78,7 +79,7 @@ export default function HotspotsPanel() {
 
   return (
     <div
-      className="absolute top-16 right-3 bg-[#0b0b15]/90 backdrop-blur-md border border-white/5 rounded-md text-[#d8d8e8] transition-all duration-300"
+      className="absolute top-16 [@media(pointer:coarse)]:top-20 right-3 max-w-[calc(100vw-1.5rem)] bg-[#0b0b15]/90 backdrop-blur-md border border-white/5 rounded-md text-[#d8d8e8] transition-all duration-300"
       style={{ width: open ? 320 : 42 }}
     >
       <button

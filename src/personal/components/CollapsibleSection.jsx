@@ -24,7 +24,7 @@ export default function CollapsibleSection({ title, id, defaultOpen = true, righ
     return (
       <button
         onClick={toggle}
-        className="w-full flex items-center justify-between bg-[#0a0a14] border border-white/5 rounded-md px-3 py-2 text-left hover:bg-white/[0.04]"
+        className="w-full flex items-center justify-between bg-[#0a0a14] border border-white/5 rounded-md px-3 py-2 tap-h text-left hover:bg-white/[0.04]"
         aria-expanded={false}
         title={`Show ${title}`}
       >
@@ -46,7 +46,7 @@ export default function CollapsibleSection({ title, id, defaultOpen = true, righ
     <div className="relative group">
       <button
         onClick={toggle}
-        className="absolute top-2 right-3 z-10 text-[#6d6d88] hover:text-[#e6e6f0] text-[11px] px-1 rounded"
+        className="absolute top-2 right-3 z-10 text-[#6d6d88] hover:text-[#e6e6f0] text-[11px] px-1 rounded tap"
         aria-expanded={true}
         aria-label={`Hide ${title}`}
         title={`Hide ${title}`}

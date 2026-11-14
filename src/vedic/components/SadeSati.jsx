@@ -30,7 +30,7 @@ export default function SadeSati() {
   const now = new Date();
 
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1400px] mx-auto space-y-6">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1400px] mx-auto space-y-6">
       <header>
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">Sade Sati & Saturn periods</h2>
         <p className="text-[13px] text-[#9b9bbd] mt-1 max-w-3xl leading-relaxed">
@@ -98,12 +98,12 @@ function CurrentState({ data, now }) {
     const pct = totalYrs > 0 ? Math.max(0, Math.min(1, elapsedYrs / totalYrs)) : 0;
     return (
       <div className="bg-[#0c0c18] border border-[#f5d680]/40 rounded-md p-5">
-        <div className="flex items-baseline gap-3 mb-2">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
           <div className="text-[11px] tracking-[0.25em] uppercase text-[#9b9bbd]">Right now</div>
           <div className="font-serif text-[18px] text-[#fff8dd]">In Sade Sati</div>
           {sub && <div className="text-[12px] text-[#d79b3a] italic">— {sub.label}</div>}
         </div>
-        <div className="grid grid-cols-3 gap-3 text-[12px]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[12px]">
           <Stat label="Started"  value={fmt(data.currentSadeSati.start)} />
           <Stat label="Ends"     value={fmt(data.currentSadeSati.end)} />
           <Stat label="Elapsed"  value={`${elapsedYrs.toFixed(1)} of ${totalYrs.toFixed(1)} yrs`} />
@@ -119,11 +119,11 @@ function CurrentState({ data, now }) {
   const future = data.sadeSati.find(p => p.start > now);
   return (
     <div className="bg-[#0c0c18] border border-[#9adfa8]/30 rounded-md p-5">
-      <div className="flex items-baseline gap-3 mb-2">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
         <div className="text-[11px] tracking-[0.25em] uppercase text-[#9b9bbd]">Right now</div>
         <div className="font-serif text-[18px] text-[#9adfa8]">Not in Sade Sati</div>
       </div>
-      <div className="grid grid-cols-2 gap-3 text-[12px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
         {past && <Stat label="Last Sade Sati ended" value={fmt(past.end)} />}
         {future && <Stat label="Next Sade Sati begins" value={fmt(future.start)} />}
         {!past && !future && <Stat label="No Sade Sati in the computed window" value="—" />}
@@ -149,7 +149,7 @@ function SadeSatiCard({ index, period, status, now }) {
   const totalYrs = yearsBetween(period.start, period.end);
   return (
     <div className={`bg-[#0c0c18] border rounded-md p-4 ${ringTone}`}>
-      <div className="flex items-baseline gap-3 mb-2">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
         <div className="font-serif text-[16px] text-[#fff8dd]">Sade Sati {index}</div>
         <div className="text-[10px] tracking-[0.18em] uppercase font-mono"
              style={{ color: status === 'current' ? '#f5d680' : status === 'past' ? '#6d6d88' : '#9b9bbd' }}>

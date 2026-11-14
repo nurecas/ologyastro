@@ -29,7 +29,7 @@ export default function Strength() {
   const { rows, beneficiaries, minSAV, maxSAV, totalSAV } = chart.ashtakavarga;
 
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1400px] mx-auto space-y-5">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1400px] mx-auto space-y-5">
       <header>
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">Ashtakavarga · Bindu Strength</h2>
         <p className="text-[13px] text-[#9b9bbd] mt-1 max-w-3xl leading-relaxed">

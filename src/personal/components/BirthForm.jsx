@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePersonal, profileKey } from '../store.js';
 import { searchLocation, offsetMinutesForZoneAt, offsetMinutesForWallClock } from '../astro/geocode.js';
 import SystemNav from '../../shared/shell/SystemNav.jsx';
+import useViewportClamp from '../../shared/lib/useViewportClamp.js';
 
 function tzLabel(min) {
   const sign = min >= 0 ? '+' : '-';
@@ -115,6 +116,8 @@ export default function BirthForm() {
   // ---- Saved-charts dropdown (next to the Name field) ------------------
   const [profilesOpen, setProfilesOpen] = useState(false);
   const profilesRef = useRef(null);
+  const profilesListRef = useRef(null);
+  useViewportClamp(profilesListRef, profilesOpen);
   useEffect(() => {
     if (!profilesOpen) return;
     const handler = (e) => {
@@ -181,7 +184,7 @@ export default function BirthForm() {
   return (
     <div className="min-h-screen w-full flex flex-col bg-[#080810]">
       <SystemNav activeId="western" />
-      <div className="flex-1 w-full flex flex-col items-center justify-center p-6">
+      <div className="flex-1 w-full flex flex-col items-center justify-center p-3 sm:p-6">
       <div className="w-full max-w-4xl">
       <div className="text-center mb-6">
         <div className="text-[#9b9bbd] text-[11px] tracking-[0.35em] uppercase">Ology</div>
@@ -196,7 +199,7 @@ export default function BirthForm() {
 
       <form
         onSubmit={submit}
-        className="bg-[#0c0c18]/90 border border-white/10 rounded-lg p-6
+        className="bg-[#0c0c18]/90 border border-white/10 rounded-lg p-4 sm:p-6
                    shadow-2xl text-[#e6e6f0]"
       >
 
@@ -227,7 +230,7 @@ export default function BirthForm() {
                 </button>
               )}
               {profilesOpen && profiles.length > 0 && (
-                <div className="absolute z-20 top-full right-0 mt-1 bg-[#0b0b15] border border-white/10
+                <div ref={profilesListRef} className="absolute z-20 top-full right-0 mt-1 bg-[#0b0b15] border border-white/10
                                 rounded-md shadow-xl w-[340px] max-h-[320px] overflow-y-auto">
                   <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 sticky top-0 bg-[#0b0b15]">
                     <div className="text-[10px] tracking-[0.25em] uppercase text-[#9b9bbd]">
@@ -236,7 +239,7 @@ export default function BirthForm() {
                     <button
                       type="button"
                       onClick={() => { clearProfiles(); setProfilesOpen(false); }}
-                      className="text-[9.5px] tracking-[0.22em] uppercase text-[#6d6d88] hover:text-white"
+                      className="text-[9.5px] tracking-[0.22em] uppercase text-[#6d6d88] hover:text-white tap-h"
                     >clear all</button>
                   </div>
                   {profiles.map((p) => {
@@ -265,14 +268,14 @@ export default function BirthForm() {
                           <button
                             type="button"
                             onClick={() => { loadFromProfile(p); setProfilesOpen(false); }}
-                            className="text-[#6d6d88] hover:text-white opacity-0 group-hover:opacity-100
+                            className="text-[#6d6d88] hover:text-white opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 tap
                                        px-1.5 py-0.5 text-[12px]"
                             title="Load into this form (don't enter yet)"
                           >✎</button>
                           <button
                             type="button"
                             onClick={() => forgetProfile(key)}
-                            className="text-[#6d6d88] hover:text-[#ff6a6a] opacity-0 group-hover:opacity-100
+                            className="text-[#6d6d88] hover:text-[#ff6a6a] opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 tap
                                        px-1.5 py-0.5 text-[14px] leading-none"
                             title="Remove this saved chart"
                           >×</button>
@@ -308,7 +311,7 @@ export default function BirthForm() {
               required
               disabled={form.timeUnknown}
             />
-            <label className="mt-1 flex items-center gap-2 text-[11px] text-[#9b9bbd] cursor-pointer">
+            <label className="mt-1 flex items-center gap-2 text-[11px] text-[#9b9bbd] cursor-pointer tap-h">
               <input
                 type="checkbox"
                 checked={!!form.timeUnknown}
@@ -435,7 +438,7 @@ export default function BirthForm() {
           >
             Cast This Chart
           </button>
-          <label className="shrink-0 text-[11px] text-[#9b9bbd] cursor-pointer underline hover:text-[#e6e6f0]">
+          <label className="shrink-0 text-[11px] text-[#9b9bbd] cursor-pointer underline hover:text-[#e6e6f0] inline-flex items-center tap-h">
             Import JSON
             <input type="file" accept=".json,application/json" className="hidden" onChange={onImportJSON} />
           </label>

@@ -128,7 +128,7 @@ export default function BirthForm() {
   return (
     <div className="min-h-screen w-full flex flex-col bg-[#080810]">
       <SystemNav activeId="chinese" />
-      <div className="flex-1 w-full flex flex-col items-center justify-center p-6">
+      <div className="flex-1 w-full flex flex-col items-center justify-center p-3 sm:p-6">
         <div className="w-full max-w-4xl">
           <div className="text-center mb-6">
             <div className="text-[#9b9bbd] text-[11px] tracking-[0.35em] uppercase">Ology · BaZi</div>
@@ -142,7 +142,7 @@ export default function BirthForm() {
             </p>
           </div>
 
-          <form onSubmit={submit} className="bg-[#0c0c18]/90 border border-white/10 rounded-lg p-6 shadow-2xl text-[#e6e6f0]">
+          <form onSubmit={submit} className="bg-[#0c0c18]/90 border border-white/10 rounded-lg p-4 sm:p-6 shadow-2xl text-[#e6e6f0]">
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
               <Field label="Name (optional)" span={9}>
                 <div className="relative">
@@ -180,7 +180,7 @@ export default function BirthForm() {
 
               <Field label="Time of birth (local)" span={3}>
                 <input type="time" value={form.time} onChange={(e) => update('time', e.target.value)} className="form-input" style={{ colorScheme: 'dark' }} required disabled={form.timeUnknown} />
-                <label className="mt-1 flex items-center gap-2 text-[11px] text-[#9b9bbd] cursor-pointer">
+                <label className="mt-1 flex items-center gap-2 text-[11px] text-[#9b9bbd] cursor-pointer tap-h">
                   <input type="checkbox" checked={!!form.timeUnknown} onChange={(e) => update('timeUnknown', e.target.checked)} />
                   Birth time unknown — Hour pillar won't be reliable.
                 </label>

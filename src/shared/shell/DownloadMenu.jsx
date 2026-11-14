@@ -9,11 +9,14 @@
 // Any option may be omitted (Gematria has no PNG/PDF in v1, for instance).
 
 import React, { useEffect, useRef, useState } from 'react';
+import useViewportClamp from '../lib/useViewportClamp.js';
 
 export default function DownloadMenu({ options }) {
   // options: [{ id, label, sub, onClick }]
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const menuRef = useRef(null);
+  useViewportClamp(menuRef, open);
 
   useEffect(() => {
     if (!open) return;
@@ -30,6 +33,7 @@ export default function DownloadMenu({ options }) {
         onClick={() => setOpen(v => !v)}
         className="btn-ghost flex items-center gap-1.5"
         title="Download chart"
+        aria-label="Download"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -38,13 +42,15 @@ export default function DownloadMenu({ options }) {
           <path d="M4.5 7.5L8 11l3.5-3.5" />
           <path d="M2.5 13.5h11" />
         </svg>
-        <span>Download</span>
+        {/* Label hidden on phones (icon + caret stay) so the action row fits. */}
+        <span className="hidden sm:inline">Download</span>
         <span style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}>▾</span>
       </button>
 
       {open && (
         <div
           role="menu"
+          ref={menuRef}
           className="absolute right-0 top-full mt-1 z-30 w-64 bg-[#0b0b15] border border-white/10 rounded-md shadow-2xl overflow-hidden"
         >
           {options.map(opt => (

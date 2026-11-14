@@ -93,7 +93,7 @@ export function PillarsPane() {
   if (!chart) return null;
   const dm = chart.dayMaster;
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1200px] mx-auto space-y-5">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1200px] mx-auto space-y-5">
       <PaneHeader
         title="Four Pillars (四柱)"
         subtitle="Year, Month, Day, Hour — each a Heavenly Stem (top) over an Earthly Branch (bottom). The Day Master sits in the third column; everything else is read in relation to it. Hidden stems beneath each branch are secondary influences."
@@ -155,7 +155,7 @@ export function DayMasterPane() {
   const tint = STRENGTH_TINT[strength?.rating || 'unknown'];
   const elementColor = ELEMENT_COLOR[dm.element];
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1100px] mx-auto space-y-5">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1100px] mx-auto space-y-5">
       <PaneHeader
         title="Day Master (日主)"
         subtitle="The Day Master is the heavenly stem of your birth day — the central reference for every reading. Element + polarity together name the archetype."
@@ -235,7 +235,7 @@ export function TenGodsPane() {
   const dist = chart.distribution || {};
   const total = Object.values(dist).reduce((a, b) => a + b, 0) || 1;
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1100px] mx-auto space-y-5">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1100px] mx-auto space-y-5">
       <PaneHeader
         title="Ten Gods (十神)"
         subtitle="Every other stem in the chart — visible and hidden — has a relationship to the Day Master. Those relationships are the 10 Gods. Each carries a flavour: Self, Output (expression), Wealth, Officer (authority/pressure), or Resource (support)."
@@ -290,7 +290,7 @@ export function LuckPillarsPane() {
   const luck = chart.luck;
   const dm = chart.dayMaster;
   return (
-    <div className="w-full p-6 text-[#e6e6f0] max-w-[1100px] mx-auto space-y-5">
+    <div className="w-full p-4 sm:p-6 text-[#e6e6f0] max-w-[1100px] mx-auto space-y-5">
       <PaneHeader
         title="Luck Pillars (大運)"
         subtitle="10-year decadal cycles starting from a precise moment determined by birth-to-jié distance. Each pillar's stem-branch combo overlays the natal chart for that decade — its element interactions reveal the period's texture."
@@ -308,7 +308,7 @@ export function LuckPillarsPane() {
             const branchColor = ELEMENT_COLOR[lp.branch.element];
             const stemGod = tenGodOfStem(lp.stem, dm);
             return (
-              <div key={i} className="grid grid-cols-[60px_72px_1fr] gap-3 items-center bg-[#0a0a14] border border-white/5 rounded-md p-2.5">
+              <div key={i} className="grid grid-cols-[52px_40px_1fr] sm:grid-cols-[60px_72px_1fr] gap-2 sm:gap-3 items-center bg-[#0a0a14] border border-white/5 rounded-md p-2.5">
                 <div className="text-[10px] text-[#9b9bbd] tracking-wide">Age {Math.floor(lp.startAge)}–{Math.floor(lp.endAge)}</div>
                 <div className="flex flex-col items-center">
                   <div className="font-serif text-[20px]" style={{ color: stemColor.fg }}>{lp.stem.hanzi}</div>

@@ -60,7 +60,7 @@ export default function NorthIndianChart({ chart, size = 420 }) {
         return (
           <g key={h}>
             {/* House number */}
-            <text x={cx} y={cy - 24} textAnchor="middle" fontSize="9"
+            <text x={cx} y={cy - 24} textAnchor="middle" fontSize="9" className="vc-small"
                   fill="rgba(155,155,189,0.6)" fontFamily="Inter, sans-serif" letterSpacing="0.15em">
               {h}
             </text>
@@ -76,7 +76,7 @@ export default function NorthIndianChart({ chart, size = 420 }) {
                 x={cx}
                 y={cy + 10 + i * 14}
                 textAnchor="middle"
-                fontSize="13"
+                fontSize="13" className="vc-planet"
                 fill={p.dignity === 'exalted' ? '#fff8dd'
                     : p.dignity === 'debilitated' ? '#ff9a9a'
                     : p.dignity === 'own' || p.dignity === 'mooltrikona' ? '#f5d680'
@@ -93,7 +93,7 @@ export default function NorthIndianChart({ chart, size = 420 }) {
                 x={cx}
                 y={cy + 10 + (planets.length + i) * 14}
                 textAnchor="middle"
-                fontSize="10"
+                fontSize="10" className="vc-small"
                 fill="#d8caff"
                 fillOpacity="0.65"
                 fontFamily="Inter, sans-serif"
@@ -107,7 +107,7 @@ export default function NorthIndianChart({ chart, size = 420 }) {
       })}
 
       {/* Lagna marker — small "AS" tucked into house 1 */}
-      <text x="200" y="120" textAnchor="middle" fontSize="9"
+      <text x="200" y="120" textAnchor="middle" fontSize="9" className="vc-small"
             fill="#d79b3a" letterSpacing="0.2em" fontFamily="Inter, sans-serif">
         ASC
       </text>

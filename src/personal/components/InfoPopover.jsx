@@ -13,8 +13,14 @@ export default function InfoPopover() {
   const content = resolve(info);
   if (!content) return null;
 
-  // Position: use absolute (x,y) if given; else center.
-  const pos = (info.x != null && info.y != null)
+  // Position: use absolute (x,y) if given; else center. On phone-width
+  // screens the card becomes a bottom sheet spanning the viewport width
+  // (scrollable if taller than ~70% of the screen) instead of following
+  // the tap point off-screen.
+  const narrow = typeof window !== 'undefined' && window.innerWidth < 640;
+  const pos = narrow
+    ? { left: 8, right: 8, bottom: 8, width: 'auto', maxHeight: '72vh', overflowY: 'auto' }
+    : (info.x != null && info.y != null)
     ? { left: Math.min(info.x + 12, window.innerWidth - 400),
         top:  Math.min(info.y + 12, window.innerHeight - 260) }
     : { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' };
@@ -51,7 +57,7 @@ export default function InfoPopover() {
         </div>
         <button
           onClick={close}
-          className="text-[#9b9bbd] hover:text-white text-[17px] leading-none px-1"
+          className="text-[#9b9bbd] hover:text-white text-[17px] leading-none px-1 tap"
           aria-label="Close"
         >×</button>
       </div>

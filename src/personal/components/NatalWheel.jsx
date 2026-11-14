@@ -398,7 +398,10 @@ export default function NatalWheel() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col p-6 text-[#e6e6f0]">
+    // Below lg the view flows (page scrolls inside <main>): the wheel gets an
+    // explicit square-ish height and the side panels stack beneath it. lg+
+    // keeps the original full-height two-column layout.
+    <div className="w-full lg:h-full flex flex-col p-4 sm:p-6 text-[#e6e6f0]">
       {uiMode === 'advanced' && showPlanetaryHours && (
         <PlanetaryHoursStrip date={transitDate} lat={natal.birth.latDeg} lon={natal.birth.lonDeg} />
       )}
@@ -467,7 +470,7 @@ export default function NatalWheel() {
 
         {/* Phase 5: Tri-wheel overlay — Advanced only. */}
         {uiMode === 'advanced' && (
-          <label className="flex items-center gap-2 text-[11px] text-[#9b9bbd] cursor-pointer ml-3" title="Overlay secondary-progressed positions">
+          <label className="flex items-center gap-2 text-[11px] text-[#9b9bbd] cursor-pointer ml-3 tap-h" title="Overlay secondary-progressed positions">
             <input
               type="checkbox"
               checked={triWheelOn}
@@ -484,8 +487,8 @@ export default function NatalWheel() {
           when Advanced added a 5th child (Rx stations) — it wrapped onto
           a new row under the wheel. A 2-column layout scales cleanly to
           any number of side cards. */}
-      <div className="flex-1 min-h-0 grid grid-cols-[1fr_340px] gap-3">
-        <div className="relative bg-[#0a0a14] border border-white/5 rounded-md overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-3">
+        <div className="relative bg-[#0a0a14] border border-white/5 rounded-md overflow-hidden h-[calc(100vw-2rem)] max-h-[78vh] min-h-[300px] lg:h-auto lg:max-h-none lg:min-h-0">
           <canvas
             ref={canvasRef}
             className="absolute inset-0 w-full h-full cursor-pointer"
@@ -500,7 +503,7 @@ export default function NatalWheel() {
             what's available, and opening one never hides the others:
             collapsed sections stay as pills above/below so the user
             always sees the full menu of what's here. */}
-        <div className="min-h-0 overflow-y-auto flex flex-col gap-2 pr-1">
+        <div className="min-h-0 overflow-y-auto flex flex-col gap-2 lg:pr-1">
           <CollapsibleSection id="activeTransits" title={`Active Transits · ${aspects.length}`} defaultOpen={false}>
             <AspectsPanel aspects={aspects} />
           </CollapsibleSection>

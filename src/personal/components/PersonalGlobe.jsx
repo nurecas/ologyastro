@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import * as THREE from 'three';
+import { attachGlobeGestures, fitFov } from '../../shared/lib/globeGestures.js';
 import { usePersonal } from '../store.js';
 import {
   dateToJD, gmst, equatorialAtDate, PLANETS, AMPLITUDE_ARRAY,
@@ -189,7 +190,9 @@ export default function PersonalGlobe() {
     scene.background = new THREE.Color(0x080810);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+    // On portrait / square containers (phones) fitFov widens the vertical FOV
+    // so the whole globe fits; landscape (every desktop layout) keeps 45°.
+    const camera = new THREE.PerspectiveCamera(fitFov(container.clientWidth / container.clientHeight), container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.set(0, 0, 2.6);
     cameraRef.current = camera;
 
@@ -359,23 +362,8 @@ export default function PersonalGlobe() {
     };
     buildLines();
 
-    // Input handlers.
-    const onDown = (e) => { rotState.current.dragging = true; rotState.current.px = e.clientX; rotState.current.py = e.clientY; };
-    const onUp   = () => { rotState.current.dragging = false; };
-    const onMove = (e) => {
-      if (!rotState.current.dragging) return;
-      const dx = e.clientX - rotState.current.px;
-      const dy = e.clientY - rotState.current.py;
-      rotState.current.px = e.clientX; rotState.current.py = e.clientY;
-      rotState.current.lon -= dx * 0.005;
-      rotState.current.lat = Math.max(-1.3, Math.min(1.3, rotState.current.lat + dy * 0.005));
-    };
-    const onWheel = (e) => { e.preventDefault(); rotState.current.zoom = Math.max(1.3, Math.min(6, rotState.current.zoom + e.deltaY * 0.003)); };
-
-    renderer.domElement.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+    // Input: drag to rotate, wheel or two-finger pinch to zoom.
+    const detachGestures = attachGlobeGestures(renderer.domElement, rotState.current);
 
     // Click handler — raycast against linesGroup. Suppress if it was a drag.
     let downX = 0, downY = 0, wasDrag = false;
@@ -433,6 +421,7 @@ export default function PersonalGlobe() {
     const onResize = () => {
       renderer.setSize(container.clientWidth, container.clientHeight);
       camera.aspect = container.clientWidth / container.clientHeight;
+      camera.fov = fitFov(camera.aspect);
       camera.updateProjectionMatrix();
     };
     window.addEventListener('resize', onResize);
@@ -453,12 +442,9 @@ export default function PersonalGlobe() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      renderer.domElement.removeEventListener('pointerdown', onDown);
+      detachGestures();
       renderer.domElement.removeEventListener('pointerdown', onPtrDown);
       renderer.domElement.removeEventListener('pointerup', onPtrUp);
-      renderer.domElement.removeEventListener('wheel', onWheel);
       renderer.domElement.removeEventListener('click', onClick);
       renderer.domElement.removeEventListener('pointermove', onHover);
       sphereGeo.dispose(); mat.dispose();
@@ -706,7 +692,9 @@ export default function PersonalGlobe() {
   const removePin = (i) => setPins(ps => ps.filter((_, idx) => idx !== i));
 
   return (
-    <div className="w-full h-full flex flex-col p-6 text-[#e6e6f0]">
+    // Below lg: globe gets an explicit height and the goals panel stacks
+    // beneath it (the view scrolls inside <main>). lg+: original layout.
+    <div className="w-full lg:h-full flex flex-col p-4 sm:p-6 text-[#e6e6f0]">
       <header className="mb-2">
         <h2 className="font-serif text-[24px] tracking-[0.12em] text-[#f5d680]">
           Personal AstroCartography
@@ -718,12 +706,15 @@ export default function PersonalGlobe() {
           panel — brighter regions favour the goals you've selected.{' '}
           <span className="text-[#f5d680]">Click any line to read what that
           planet on that angle traditionally means.</span> The gold dot marks
-          your birth location. Drag to rotate, scroll to zoom.
+          your birth location. Drag to rotate,{' '}
+          <span className="[@media(pointer:coarse)]:hidden">scroll</span>
+          <span className="hidden [@media(pointer:coarse)]:inline">pinch</span>
+          {' '}to zoom.
         </p>
       </header>
 
-      <div className="flex-1 min-h-0 grid grid-cols-[1fr_320px] gap-4">
-        <div className="relative bg-[#0a0a14] border border-white/5 rounded-md overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+        <div className="relative bg-[#0a0a14] border border-white/5 rounded-md overflow-hidden h-[calc(100vw-2rem)] max-h-[70vh] min-h-[300px] lg:h-auto lg:max-h-none lg:min-h-0">
           <div ref={containerRef} className="absolute inset-0" />
           {hover && (
             <div
@@ -757,7 +748,7 @@ export default function PersonalGlobe() {
               </div>
               <button
                 onClick={() => setGoals(Object.fromEntries(GOAL_PRESETS.map(g => [g.id, false])))}
-                className="text-[10px] text-[#6d6d88] hover:text-white uppercase tracking-wider"
+                className="text-[10px] text-[#6d6d88] hover:text-white uppercase tracking-wider tap"
                 title="Turn all goals off"
               >clear</button>
             </div>
@@ -790,7 +781,7 @@ export default function PersonalGlobe() {
                         x: e.clientX, y: e.clientY,
                       })
                     }
-                    className="text-[11px] text-[#6d6d88] hover:text-white px-1"
+                    className="text-[11px] text-[#6d6d88] hover:text-white px-1 tap"
                     title="What this goal includes"
                   >ℹ</button>
                 </div>
@@ -946,13 +937,13 @@ export default function PersonalGlobe() {
               Places where each planet sat overhead (MC) or underfoot (IC)
               at the exact moment of birth. Click any row for the meaning.
             </div>
-            <div className="grid grid-cols-[18px_1fr_1fr] gap-x-2 text-[10px] tracking-[0.12em] uppercase text-[#6d6d88] pb-1 border-b border-white/5">
+            <div className="grid grid-cols-[18px_1fr_1fr] [@media(pointer:coarse)]:grid-cols-[40px_1fr_1fr] gap-x-2 text-[10px] tracking-[0.12em] uppercase text-[#6d6d88] pb-1 border-b border-white/5">
               <div></div>
               <div>MC</div>
               <div>IC</div>
             </div>
             {hotspots.map(h => (
-              <div key={h.planet} className="grid grid-cols-[18px_1fr_1fr] gap-x-2 items-start pt-1.5">
+              <div key={h.planet} className="grid grid-cols-[18px_1fr_1fr] [@media(pointer:coarse)]:grid-cols-[40px_1fr_1fr] gap-x-2 items-start pt-1.5">
                 <button
                   className="text-[15px] text-left"
                   style={{ color: h.color }}

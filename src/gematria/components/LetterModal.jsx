@@ -21,16 +21,16 @@ export default function LetterModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-sm"
       onClick={close}
     >
       <div
-        className="w-full max-w-[520px] bg-[#0c0c18] border border-[#f5d680]/40 rounded-2xl p-9 text-center shadow-2xl relative"
+        className="w-full max-w-[520px] max-h-full overflow-y-auto bg-[#0c0c18] border border-[#f5d680]/40 rounded-2xl p-6 sm:p-9 text-center shadow-2xl relative"
         onClick={e => e.stopPropagation()}
       >
         <button
           onClick={close}
-          className="absolute right-4 top-3 text-[#9b9bbd] hover:text-[#f5d680] text-2xl leading-none"
+          className="absolute right-4 top-3 text-[#9b9bbd] hover:text-[#f5d680] text-2xl leading-none tap"
           aria-label="Close"
         >×</button>
         <div className="text-[80px] leading-none text-[#f5d680] mb-3 font-serif">{modal.letter}</div>
