@@ -25,6 +25,8 @@ import { dateToJD, isSwissReady } from '../../astro/ephemeris.js';
 // Day-boundary convention: the day pillar uses the LOCAL Gregorian date.
 // (Some classical schools advance the day pillar at 23:00 Zi-hour; we
 // expose `useZiAdvance` as an option but default to midnight-local.)
+// The HOUR stem for 23:00-23:59 is always taken from the next day's stem
+// (see fourPillars), which both schools agree on.
 // ---------------------------------------------------------------------------
 const DAY_INDEX_OFFSET = 49;
 
@@ -194,8 +196,15 @@ export function fourPillars(birth) {
   // Day Pillar — local Gregorian date.
   const day = dayPillar(localYear, localMonth, localDay, localHour);
 
-  // Hour Pillar — local hour + day stem.
-  const hour = hourPillar(localHour, day.stem);
+  // Hour Pillar — local hour + day stem. Convention (documented): the day
+  // pillar changes at local midnight, but 23:00-23:59 is already the Zi hour
+  // of the NEXT day, so its stem comes from the next day's stem by the Five
+  // Rats rule ("late Zi hour" 夜子時; the Zi-advance school agrees on the hour
+  // stem). Thus 23:30 and 00:30 the next morning share the same hour pillar.
+  const hourStemDay = localHour >= 23
+    ? dayPillar(localYear, localMonth, localDay, localHour, { useZiAdvance: true })
+    : day;
+  const hour = hourPillar(localHour, hourStemDay.stem);
 
   return {
     year, month, day, hour,

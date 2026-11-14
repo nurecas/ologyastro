@@ -13,11 +13,11 @@
 // The 24-hour cycle then follows Chaldean order from that first hour.
 //
 // Used by the Transits-view top strip (Advanced mode, Phase 5 surfaces).
-// Simple sunrise/sunset geometry — accurate to a minute for general use;
-// we intentionally don't fold in atmospheric refraction or elevation.
+// Sunrise/sunset include the equation of time and the standard -0.833 deg
+// horizon (refraction + solar semidiameter); observer elevation is ignored.
 // -----------------------------------------------------------------------------
 
-import { dateToJD, obliquity, longitudesAtDate } from '../../astro/ephemeris.js';
+import { dateToJD } from '../../astro/ephemeris.js';
 
 const CHALDEAN_ORDER = ['Saturn','Jupiter','Mars','Sun','Venus','Mercury','Moon'];
 const DAY_RULER = [
@@ -26,45 +26,60 @@ const DAY_RULER = [
 
 const DEG = Math.PI / 180;
 
-// Sun's approximate declination at JD (radians).
-function sunDec(jd) {
-  const lonDeg = longitudesAtDate(new Date((jd - 2440587.5) * 86400000)).Sun;
-  const eps = obliquity(jd);
-  return Math.asin(Math.sin(lonDeg * DEG) * Math.sin(eps));
+// Apparent Sun for rise/set work: declination (rad) and the equation of
+// time (minutes) at JD, from the Meeus ch. 25 low-precision solar theory
+// (about 0.01 deg in longitude, a few seconds in the equation of time).
+// Always TROPICAL and independent of the ephemeris' sidereal mode.
+function sunRiseSetParams(jd) {
+  const T = (jd - 2451545.0) / 36525;
+  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
+  const M = (357.52911 + 35999.05029 * T - 0.0001537 * T * T) * DEG;
+  const C = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(M)
+          + (0.019993 - 0.000101 * T) * Math.sin(2 * M) + 0.000289 * Math.sin(3 * M);
+  const om = (125.04 - 1934.136 * T) * DEG;
+  const lam = (L0 + C - 0.00569 - 0.00478 * Math.sin(om)) * DEG;   // apparent longitude
+  const eps = (23.439291 - 0.0130042 * T + 0.00256 * Math.cos(om)) * DEG;
+  const ra = Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam)) / DEG;
+  const dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+  let eot = (L0 - 0.0057183 - ra) % 360;            // degrees
+  if (eot > 180) eot -= 360; if (eot < -180) eot += 360;
+  return { dec, eotMin: eot * 4 };
 }
 
-// Hour-angle of the Sun at sunrise / sunset for observer at latitude (rad).
-// cos H = -tan(lat) tan(dec). If |cos H| > 1, Sun is circumpolar / never
-// rises — return null so callers can show "—".
-function sunHourAngle(latRad, decRad) {
-  const c = -Math.tan(latRad) * Math.tan(decRad);
-  if (c > 1 || c < -1) return null;
-  return Math.acos(c);
-}
+// Standard altitude of the Sun's upper limb at rise/set: -0deg50' (34' mean
+// refraction + 16' semidiameter), as used by almanacs (USNO, NOAA).
+const SUN_H0 = -0.8333 * DEG;
 
-// Sunrise / sunset JDs for the UT calendar day containing `date`, at the
-// observer's lat/lon (east-positive). Returns { sunriseJD, sunsetJD,
-// dayLengthHours }.
+// Sunrise / sunset JDs for the observer's LOCAL (mean solar) civil day
+// containing `date`, at lat/lon (east-positive). Iterates the hour angle
+// with the Sun's declination and the equation of time evaluated at the
+// event itself, against the -0.833 deg horizon. Agrees with Astronomy
+// Engine / timeanddate to well under a minute at non-polar latitudes.
+// Returns { sunriseJD, sunsetJD, dayLengthHours }; nulls when the Sun does
+// not rise or set that day (polar day/night).
 export function sunTransitsFor(date, latDeg, lonDeg) {
   // Anchor the solar day to the observer's LOCAL civil day, not the UTC day.
   // A longitude whose local day straddles UTC midnight would otherwise be
   // handed the neighbouring day's daylight arc — producing a wrong day/night
   // phase and an out-of-range (negative or >11) hour index.
   const local = new Date(date.getTime() + lonDeg * 240000); // 240000 ms per ° of longitude (east +)
-  const jd0 = dateToJD(new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), 12)));
+  // UT instant of local MEAN midnight that starts this day.
+  const day0Ms = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - lonDeg * 240000;
   const latRad = latDeg * DEG;
-  const dec = sunDec(jd0);
-  const H = sunHourAngle(latRad, dec);
-  if (H == null) return { sunriseJD: null, sunsetJD: null, dayLengthHours: 0 };
-  // Local solar noon JD — at longitude lon, solar noon is 12:00 local
-  // apparent time. UT offset = -lon / 15 hours.
-  const noonJD = jd0 - lonDeg / 360;
-  const halfDay = H / (2 * Math.PI);  // fraction of a day
-  return {
-    sunriseJD: noonJD - halfDay,
-    sunsetJD:  noonJD + halfDay,
-    dayLengthHours: halfDay * 24 * 2,
+  const event = (sign) => {             // sign: -1 rise, +1 set
+    let tMs = day0Ms + 12 * 3600000;
+    for (let i = 0; i < 5; i++) {
+      const { dec, eotMin } = sunRiseSetParams(tMs / 86400000 + 2440587.5);
+      const c = (Math.sin(SUN_H0) - Math.sin(latRad) * Math.sin(dec)) / (Math.cos(latRad) * Math.cos(dec));
+      if (c > 1 || c < -1) return null;
+      const H = Math.acos(c) / DEG;     // degrees
+      tMs = day0Ms + (720 - eotMin + sign * H * 4) * 60000;
+    }
+    return tMs / 86400000 + 2440587.5;
   };
+  const sunriseJD = event(-1), sunsetJD = event(+1);
+  if (sunriseJD == null || sunsetJD == null) return { sunriseJD: null, sunsetJD: null, dayLengthHours: 0 };
+  return { sunriseJD, sunsetJD, dayLengthHours: (sunsetJD - sunriseJD) * 24 };
 }
 
 // Classical planetary hour at `date` for an observer at (lat, lon).

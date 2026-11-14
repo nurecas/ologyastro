@@ -62,3 +62,18 @@ export function offsetMinutesForZoneAt(iana, date) {
     return 0;
   }
 }
+
+// Offset (minutes east of UTC) in force at a LOCAL wall-clock time in an IANA
+// zone. `wallAsUTC` is the wall-clock reading encoded as if it were UTC
+// (e.g. new Date('1990-06-21T04:00:00Z') for 04:00 local). The offset must be
+// sampled at the real instant (wall − offset), not at the wall time itself,
+// or births within a few hours of a DST change come out an hour off.
+// For a non-existent local time (spring-forward gap) the earlier offset is used.
+export function offsetMinutesForWallClock(iana, wallAsUTC) {
+  const w = wallAsUTC.getTime();
+  const o1 = offsetMinutesForZoneAt(iana, wallAsUTC);
+  const o2 = offsetMinutesForZoneAt(iana, new Date(w - o1 * 60000));
+  if (o1 === o2) return o1;
+  const o3 = offsetMinutesForZoneAt(iana, new Date(w - o2 * 60000));
+  return o3 === o2 ? o2 : Math.min(o1, o2);
+}

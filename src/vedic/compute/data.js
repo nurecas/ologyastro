@@ -104,9 +104,9 @@ export const DEBIL = Object.fromEntries(
 // Mooltrikona — special "headquarters" range. { sign, from, to } in degrees.
 export const MOOLTRIKONA = {
   Sun:     { sign: 4,  from: 0,  to: 20 }, // Leo 0–20
-  Moon:    { sign: 1,  from: 4,  to: 30 }, // Taurus 4–30
+  Moon:    { sign: 1,  from: 3,  to: 30 }, // Taurus 3–30 (after the 0–3° uccha band)
   Mars:    { sign: 0,  from: 0,  to: 12 }, // Aries 0–12
-  Mercury: { sign: 5,  from: 16, to: 20 }, // Virgo 16–20
+  Mercury: { sign: 5,  from: 15, to: 20 }, // Virgo 15–20 (BPHS: 16th–20th degree, after the 0–15° uccha band)
   Jupiter: { sign: 8,  from: 0,  to: 10 }, // Sagittarius 0–10
   Venus:   { sign: 6,  from: 0,  to: 15 }, // Libra 0–15
   Saturn:  { sign: 10, from: 0,  to: 20 }, // Aquarius 0–20

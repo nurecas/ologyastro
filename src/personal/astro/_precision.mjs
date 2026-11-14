@@ -571,6 +571,77 @@ head('11. Midpoints — Ebertin 90° dial (square/opposition, not only conjuncti
   assert(acts.every(a => a.orb <= 1.5), 'all dial contacts within the 1.5° orb');
 }
 
+// -----------------------------------------------------------------------------
+head('12. Sunrise/sunset with equation of time + refraction; planetary-hour boundaries (audit f)');
+{
+  // References: Astronomy Engine SearchRiseSet (USNO-validated) and
+  // timeanddate.com. London 2026-11-03: rise 06:57:27Z, set 16:29:59Z.
+  // New York 2026-06-21: rise 09:25:03Z (05:25 EDT), set 00:30:43Z (20:31 EDT).
+  // The old geometry (no EoT, 0 deg horizon) gave London 07:20 / 16:40.
+  const mins = (a, b) => Math.abs(a.getTime() - b.getTime()) / 60000;
+  const lon = planetaryHourAt(new Date('2026-11-03T10:00:00Z'), 51.5074, -0.1278);
+  // Tuesday → day ruler Mars; hour length (16:29:59-06:57:27)/12 = 47m42.7s.
+  const L_RISE = Date.parse('2026-11-03T06:57:27Z'), L_HR = (Date.parse('2026-11-03T16:29:59Z') - L_RISE) / 12;
+  assert(lon && lon.phase === 'day' && lon.index === 3, `London 10:00Z is day hour index 3 (got ${lon && lon.index})`);
+  assert(lon && mins(lon.start, new Date(L_RISE + 3 * L_HR)) < 1, `London hour 4 starts ${new Date(L_RISE + 3 * L_HR).toISOString()} ±1 min (got ${lon && lon.start.toISOString()})`);
+  assert(lon && mins(lon.end, new Date(L_RISE + 4 * L_HR)) < 1, `London hour 4 ends ±1 min (got ${lon && lon.end.toISOString()})`);
+  assert(lon && lon.ruler === 'Mercury', `London Tue hour 4 ruler Mercury (Mars, Sun, Venus, Mercury) got ${lon && lon.ruler}`);
+  const ny = planetaryHourAt(new Date('2026-06-21T12:00:00Z'), 40.7128, -74.0060);
+  const N_RISE = Date.parse('2026-06-21T09:25:03Z'), N_HR = (Date.parse('2026-06-22T00:30:43Z') - N_RISE) / 12;
+  assert(ny && ny.phase === 'day' && ny.index === 2, `NYC 08:00 EDT is day hour index 2 (got ${ny && ny.index})`);
+  assert(ny && mins(ny.start, new Date(N_RISE + 2 * N_HR)) < 1, `NYC hour 3 starts ±1 min (got ${ny && ny.start.toISOString()})`);
+  assert(ny && ny.ruler === 'Mercury', `NYC Sunday hour 3 ruler Mercury (got ${ny && ny.ruler})`);
+  // 06:50Z London is BEFORE the true sunrise (06:57) → still the night of Monday.
+  const pre = planetaryHourAt(new Date('2026-11-03T06:50:00Z'), 51.5074, -0.1278);
+  assert(pre && pre.phase === 'night', `London 06:50Z is still night (got ${pre && pre.phase})`);
+  // 07:10Z is after the true sunrise but before the old 07:20 estimate.
+  const post = planetaryHourAt(new Date('2026-11-03T07:10:00Z'), 51.5074, -0.1278);
+  assert(post && post.phase === 'day' && post.ruler === 'Mars', `London 07:10Z is the first (Mars) hour of Tuesday (got ${post && post.phase} ${post && post.ruler})`);
+}
+
+// -----------------------------------------------------------------------------
+head('13. Sect (day/night) from the Sun above the horizon — every house system');
+{
+  // London 2026-07-05 04:30 UTC: the Sun (≈13° Cancer) rose at ≈03:50 UTC and
+  // sits just below the ASC degree (≈19° Cancer) — above the horizon, so a DAY
+  // chart. In whole-sign houses the Sun shares the ASC sign (house 1), which
+  // the old "houses 7-12 = day" test read as night, reversing the Part of
+  // Fortune formula.
+  const { initSwiss } = await import('../../astro/ephemeris.js');
+  await initSwiss();
+  const b = { year: 2026, month: 7, day: 5, hour: 4, minute: 30, tzOffsetMin: 0, latDeg: 51.5074, lonDeg: -0.1278 };
+  for (const sys of ['placidus', 'whole-sign', 'equal', 'koch']) {
+    const c = computeNatal(b, { houseSystem: sys });
+    const sun = c.planets.find(p => p.name === 'Sun').lonDeg, moon = c.planets.find(p => p.name === 'Moon').lonDeg;
+    assert(c.isDay === true, `${sys}: Sun risen → day chart (got isDay=${c.isDay})`);
+    const want = ((c.ascDeg + moon - sun) % 360 + 360) % 360;
+    assert(angDiff(c.partOfFortuneDeg, want) < 1e-9, `${sys}: day Part of Fortune = ASC + Moon − Sun`);
+  }
+  // 20:30 UTC the same day: Sun set (≈20:20 UTC) → night in every system.
+  const n = computeNatal({ ...b, hour: 20, minute: 45 }, { houseSystem: 'whole-sign' });
+  assert(n.isDay === false, `whole-sign: Sun set → night chart (got isDay=${n.isDay})`);
+}
+
+// -----------------------------------------------------------------------------
+head('14. Time-zone offset for a LOCAL wall-clock birth time (DST edges)');
+{
+  // The birth forms passed the wall-clock time read as UTC, so the zone's
+  // offset was sampled |offset| hours away from the real instant — wrong by
+  // an hour around every DST change.
+  const { offsetMinutesForWallClock } = await import('./geocode.js');
+  const W = (iso) => new Date(iso + 'Z');
+  // New York 2024-11-03 03:30 local: DST ended at 02:00 → EST (−300).
+  assert(offsetMinutesForWallClock('America/New_York', W('2024-11-03T03:30:00')) === -300, 'NY 2024-11-03 03:30 → −300 (EST)');
+  // Sydney 2024-10-05 20:00 local: DST starts 2024-10-06 02:00 → still AEST (+600).
+  assert(offsetMinutesForWallClock('Australia/Sydney', W('2024-10-05T20:00:00')) === 600, 'Sydney 2024-10-05 20:00 → +600 (AEST)');
+  assert(offsetMinutesForWallClock('Australia/Sydney', W('2024-10-06T09:00:00')) === 660, 'Sydney 2024-10-06 09:00 → +660 (AEDT)');
+  // Ordinary and half-hour zones, and a historical one.
+  assert(offsetMinutesForWallClock('Asia/Kolkata', W('1990-06-21T04:00:00')) === 330, 'Kolkata → +330');
+  assert(offsetMinutesForWallClock('Asia/Kathmandu', W('2000-01-01T12:00:00')) === 345, 'Kathmandu → +345');
+  assert(offsetMinutesForWallClock('Europe/London', W('1970-01-15T12:00:00')) === 60, 'London Jan 1970 (British Standard Time) → +60');
+  assert(offsetMinutesForWallClock('America/New_York', W('1960-07-04T12:00:00')) === -240, 'NY July 1960 → −240 (EDT)');
+}
+
 console.log(`\n${'─'.repeat(48)}`);
 console.log(`  ${passed} passed · ${failed} failed`);
 if (failed) {

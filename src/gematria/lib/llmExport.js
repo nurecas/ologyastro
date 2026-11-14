@@ -4,7 +4,7 @@
 import { downloadLLMJson, downloadRawJson } from '../../shared/lib/downloadJSON.js';
 import { computeForLang, calcTrinity, reduceNumber, getPrimaryMap } from '../compute/calculate.js';
 import { findEquivalents, EQUIV_SYSTEM } from '../compute/equivalents.js';
-import { fingerprint, lifePath, birthdayNum, personalYear, pinnacles, challenges } from '../compute/numberMeanings.js';
+import { fingerprint, lifePath, birthdayNum, personalYear, universalYear, pinnacles, challenges } from '../compute/numberMeanings.js';
 import { transliterate } from '../compute/transliterate.js';
 
 const PROMPT = `You are a gematria scholar with deep knowledge of the four classical traditions: Hebrew Gematria (Mispar Hechrechi and its variants), Greek Isopsephy, Arabic Abjad (ʿilm al-ḥurūf), and Western Pythagorean numerology. The JSON file alongside this prompt contains a complete computation by the Ology desktop app.
@@ -96,7 +96,7 @@ function buildChart(state) {
       life_path: lp,
       birthday: bday,
       personal_year: { year: calY, ...pY },
-      universal_year: pY.final,
+      universal_year: universalYear(calY),
       pinnacles: pins,
       challenges: chs,
     };

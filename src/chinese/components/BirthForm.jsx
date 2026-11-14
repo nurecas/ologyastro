@@ -3,7 +3,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useBazi, profileKey } from '../store.js';
-import { searchLocation, offsetMinutesForZoneAt } from '../../personal/astro/geocode.js';
+import { searchLocation, offsetMinutesForZoneAt, offsetMinutesForWallClock } from '../../personal/astro/geocode.js';
 import SystemNav from '../../shared/shell/SystemNav.jsx';
 import ProfilesDropdown from '../../shared/shell/ProfilesDropdown.jsx';
 
@@ -97,7 +97,8 @@ export default function BirthForm() {
 
   const applyLocation = (loc) => {
     const birthDate = form.date ? new Date(form.date + 'T' + (form.time || '12:00') + ':00Z') : new Date();
-    const tz = offsetMinutesForZoneAt(loc.timezone, birthDate);
+    // birthDate is the local wall clock read as UTC: sample the offset at the real instant.
+    const tz = form.date ? offsetMinutesForWallClock(loc.timezone, birthDate) : offsetMinutesForZoneAt(loc.timezone, birthDate);
     setForm((f) => ({
       ...f,
       latMag: Math.abs(loc.latitude).toFixed(4),

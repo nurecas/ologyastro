@@ -115,21 +115,51 @@ export function birthdayNum(day) {
   return { value: parseInt(day, 10), reduced: digitSum(day), raw: parseInt(day, 10) };
 }
 
+// Reduction conventions (Pythagorean school as taught by Decoz / Goodwin):
+//  * Life Path — month, day and year are each reduced keeping 11/22/33,
+//    then the total is reduced keeping 11/22/33.
+//  * Cycle numbers (Personal Year, Pinnacles) — month, day and year are
+//    reduced to SINGLE digits first; the resulting cycle number is reduced
+//    to 1-9 except that 11 and 22 are kept. 33 is not used as a cycle number.
+//    The 3rd pinnacle adds the single-digit forms of the 1st and 2nd.
+//  * The 1st pinnacle ends at age 36 minus the Life Path reduced to a single
+//    digit (Life Path 11 → 2 → age 34; 22 → 4 → 32; 33 → 6 → 30).
+//  * Challenges — everything fully reduced (0-8).
+function cycleReduce(n) {
+  let x = Math.abs(parseInt(n, 10)) || 0;
+  while (x > 9) {
+    if (x === 11 || x === 22) return x;      // kept when the sum passes through them
+    x = String(x).split('').reduce((a, b) => a + parseInt(b, 10), 0);
+  }
+  return x;
+}
+
 export function personalYear(month, day, calYear) {
-  const m = digitSum(month), d = digitSum(day), y = digitSum(calYear);
+  const m = digitSum(month, false), d = digitSum(day, false), y = digitSum(calYear, false);
   const total = m + d + y;
-  return { total, final: digitSum(total) };
+  return { m, d, y, total, final: cycleReduce(total) };
 }
 
 export function universalYear(year) { return digitSum(year); }
 
+// Reference date helpers for the Personal / Universal Year. The reference
+// is an explicit LOCAL calendar date 'YYYY-MM-DD' (never the UTC date), so
+// the year a reading uses is visible, testable and can be set to any year.
+export function localDateISO(now = new Date()) {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+export function referenceYear(referenceDateISO) {
+  const y = Number(String(referenceDateISO || localDateISO()).slice(0, 4));
+  return Number.isFinite(y) && y > 0 ? y : new Date().getFullYear();
+}
+
 export function pinnacles(year, month, day) {
-  const m = digitSum(month), d = digitSum(day), y = digitSum(year);
-  const p1 = digitSum(m + d);
-  const p2 = digitSum(d + y);
-  const p3 = digitSum(p1 + p2);
-  const p4 = digitSum(m + y);
-  const lp = digitSum(m + d + y);
+  const m = digitSum(month, false), d = digitSum(day, false), y = digitSum(year, false);
+  const p1 = cycleReduce(m + d);
+  const p2 = cycleReduce(d + y);
+  const p3 = cycleReduce(digitSum(p1, false) + digitSum(p2, false));
+  const p4 = cycleReduce(m + y);
+  const lp = digitSum(lifePath(year, month, day).final, false);
   const end1 = 36 - lp;
   return [
     { name:'1st Pinnacle',  value:p1, period:`Birth — age ${end1}`,        isMaster:[11,22,33].includes(p1) },

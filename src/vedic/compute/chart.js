@@ -9,6 +9,7 @@ import {
   PLANETS,
 } from '../../astro/ephemeris.js';
 import { birthToUTCDate } from '../../personal/astro/natal.js';
+import { sunTransitsFor } from '../../personal/astro/planetaryHours.js';
 import {
   RASHIS, NAKSHATRAS, OWN_SIGN, EXALT, DEBIL, MOOLTRIKONA, NAISARGIKA,
   VEDIC_BODIES,
@@ -43,24 +44,23 @@ function nakshatraOf(lonDeg) {
   return { ...NAKSHATRAS[idx], padaIndex: pada, withinDeg: within };
 }
 
-function dignityOf(planet, lonDeg) {
+export function dignityOf(planet, lonDeg) {
   const sign = signOf(lonDeg);
   const within = norm360(lonDeg) - sign * 30;
-  // Exaltation is tested BEFORE own-sign: for the one planet whose exaltation
-  // sign is also its own sign (Mercury in Virgo), checking own first would
-  // mislabel the deepest-uccha degree as 'own'/'mooltrikona' and score it
-  // WEAKER than the adjacent mooltrikona band — an inversion. Exaltation wins
-  // the whole sign. (No regression for others: a planet's exaltation sign is
-  // never also its own sign except Mercury/Virgo, and Moon/Taurus already
-  // resolved to 'exalted' under the old order.)
+  // BPHS ch. 3 precedence. Exaltation and debilitation hold for the whole
+  // sign, EXCEPT where a planet's exaltation sign is also its mooltrikona /
+  // own sign: there BPHS splits the sign by degree —
+  //   Moon in Taurus:    exalted 0-3°,  mooltrikona 3-30°
+  //   Mercury in Virgo:  exalted 0-15°, mooltrikona 15-20°, own 20-30°
+  // Elsewhere mooltrikona covers its degree band of the MT sign and the rest
+  // of that sign is own (Sun Leo 0-20, Mars Aries 0-12, Jupiter Sag 0-10,
+  // Venus Libra 0-15, Saturn Aquarius 0-20).
   const ex = EXALT[planet];
-  if (ex && ex.sign === sign) return 'exalted';
+  const mt = MOOLTRIKONA[planet];
+  if (ex && ex.sign === sign && !(mt && mt.sign === sign && within >= ex.deg)) return 'exalted';
+  if (mt && mt.sign === sign && within >= mt.from && within <= mt.to) return 'mooltrikona';
   const owns = OWN_SIGN[planet] || [];
-  if (owns.includes(sign)) {
-    const mt = MOOLTRIKONA[planet];
-    if (mt && mt.sign === sign && within >= mt.from && within <= mt.to) return 'mooltrikona';
-    return 'own';
-  }
+  if (owns.includes(sign)) return 'own';
   const de = DEBIL[planet];
   if (de && de.sign === sign) return 'debilitated';
   return 'neutral';
@@ -94,6 +94,21 @@ function computeLagna(birth, jd) {
   }
   const lonDeg = houses.asc;
   return { lonDeg, signIdx: signOf(lonDeg), withinDeg: lonDeg - signOf(lonDeg) * 30 };
+}
+
+// Vara: weekday of the most recent local sunrise at or before the birth.
+// Returns a Date whose getUTCDay() is that weekday. The sunrise is dated in
+// local mean solar time (always early morning, so its date is unambiguous).
+// Falls back to the local civil date where the Sun does not rise (polar).
+function varaWeekdayDate(utc, jd, birth) {
+  const civil = new Date(utc.getTime() + (birth.tzOffsetMin || 0) * 60000);
+  if (!Number.isFinite(birth.latDeg) || !Number.isFinite(birth.lonDeg)) return civil;
+  let tr = sunTransitsFor(utc, birth.latDeg, birth.lonDeg);
+  if (tr.sunriseJD != null && jd < tr.sunriseJD) {
+    tr = sunTransitsFor(new Date(utc.getTime() - 86400000), birth.latDeg, birth.lonDeg);
+  }
+  if (tr.sunriseJD == null) return civil;
+  return new Date((tr.sunriseJD - 2440587.5) * 86400000 + birth.lonDeg * 240000);
 }
 
 // Main entry. Returns a Vedic chart object suitable for both UI rendering
@@ -162,11 +177,12 @@ export function computeVedicChart(birth, options = {}) {
   const dasha = moon ? vimshottariDasha(moon.lonDeg, utc, 120) : null;
 
   // Panchang at birth — Tithi · Yoga · Karana · Vara · Nakshatra.
-  // For Vara we must use the LOCAL calendar day, not UT: a 2 AM IST birth
-  // is 8:30 PM UT of the previous day, which would yield the wrong weekday.
+  // Vara (Jyotish weekday) runs from local SUNRISE to the next sunrise, so a
+  // birth before sunrise belongs to the previous weekday. We pass a date
+  // whose UTC weekday is the weekday of the most recent sunrise.
   const sun = planets.find(p => p.name === 'Sun');
-  const localDate = new Date(utc.getTime() + (birth.tzOffsetMin || 0) * 60000);
-  const panchang = (sun && moon) ? computePanchang(sun.lonDeg, moon.lonDeg, localDate) : null;
+  const varaDate = varaWeekdayDate(utc, jd, birth);
+  const panchang = (sun && moon) ? computePanchang(sun.lonDeg, moon.lonDeg, varaDate) : null;
 
   // Build a partial chart so detectors below can reference standard fields.
   // Special lagnas + sambandha need lagnaLonDeg / lagnaSignIdx + planets.

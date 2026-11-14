@@ -9,16 +9,19 @@
 //
 // Algorithm (Yavanajataka / Phaladeepika):
 //
-// Day birth — daytime (sunrise → sunset) is divided into 8 equal parts. The
-// Gulika kāla (the period assigned to Saturn's son) is one of those parts,
-// numbered by the weekday lord of the birth date:
+// Day birth — daytime (sunrise → sunset) is divided into 8 equal parts,
+// ruled in weekday order starting from the weekday lord; the 8th part is
+// lordless. Gulika kāla is the part ruled by SATURN (BPHS 3.66-68):
 //
-//   Sun → 8th, Moon → 7th, Mars → 6th, Mercury → 5th,
-//   Jupiter → 4th, Venus → 3rd, Saturn → 2nd part.
+//   Sun → 7th, Moon → 6th, Mars → 5th, Mercury → 4th,
+//   Jupiter → 3rd, Venus → 2nd, Saturn → 1st part.
 //
-// Night birth — nighttime (sunset → next sunrise) is divided into 8 parts;
-// the Gulika kāla part number is `((dayPart - 5) mod 8) + 1` — equivalently
-// "subtract 4 from the day-rule, mod 8" per the prompt's Yavanajataka rule.
+// Night birth — nighttime (sunset → next sunrise) is divided into 8 parts
+// whose lords start from the 5th weekday lord from the day's lord; Saturn's
+// part is then: Sun → 3rd, Mon → 2nd, Tue → 1st, Wed → 7th, Thu → 6th,
+// Fri → 5th, Sat → 4th.
+// (Before the audit fix the table was shifted by one part — Sun → 8th, the
+// lordless part — and the night rule used mod 8 instead of the 7 lords.)
 //
 // Gulika longitude = sidereal Ascendant at the START of the part FOLLOWING
 // Gulika kāla — i.e. at the END of the Gulika kāla part. (Some schools use
@@ -35,6 +38,7 @@ import {
   obliquity, longitudesAtDateStandish,
 } from '../../astro/ephemeris.js';
 import { birthToUTCDate } from '../../personal/astro/natal.js';
+import { sunTransitsFor } from '../../personal/astro/planetaryHours.js';
 import { RASHIS, NAKSHATRAS } from './data.js';
 
 const DEG = Math.PI / 180;
@@ -44,9 +48,9 @@ const PADA_SPAN = NAK_SPAN / 4;
 function norm360(x) { let y = x % 360; if (y < 0) y += 360; return y; }
 function signOf(lon) { return Math.floor(norm360(lon) / 30); }
 
-// Day-part for Gulika kāla, 1-indexed. Weekday: 0=Sun..6=Sat.
-//   Sun→8, Mon→7, Tue→6, Wed→5, Thu→4, Fri→3, Sat→2
-const GULIKA_DAY_PART = [8, 7, 6, 5, 4, 3, 2];
+// Saturn's part (Gulika kāla), 1-indexed. Weekday: 0=Sun..6=Sat.
+const GULIKA_DAY_PART   = [7, 6, 5, 4, 3, 2, 1];
+const GULIKA_NIGHT_PART = [3, 2, 1, 7, 6, 5, 4];
 
 // Sun declination at JD via the always-tropical Standish/Meeus path.
 // We deliberately don't use longitudesAtDate here — it respects the active
@@ -65,23 +69,19 @@ function sunHourAngle(latRad, decRad) {
   return Math.acos(c);
 }
 
-// Sunrise / sunset JDs for the UT calendar day containing `date` at the
-// observer's lat/lon (east-positive). Returns null if the Sun is
-// circumpolar at this latitude on this day — Gulika is undefined in that
-// case and callers can show "—".
+// Sunrise / sunset JDs for the observer's LOCAL solar day containing
+// `date` (equation of time + -0.833 deg horizon; see planetaryHours.js).
+// Returns null if the Sun is circumpolar at this latitude on this day —
+// Gulika is undefined in that case and callers can show "—".
 function sunTransits(date, latDeg, lonDeg) {
-  const jd0 = dateToJD(new Date(Date.UTC(
-    date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12,
-  )));
-  const dec = sunDeclination(jd0);
-  const H   = sunHourAngle(latDeg * DEG, dec);
-  if (H == null) return null;
-  const noonJD = jd0 - lonDeg / 360;
-  const halfDay = H / (2 * Math.PI);
-  return {
-    sunriseJD: noonJD - halfDay,
-    sunsetJD:  noonJD + halfDay,
-  };
+  const tr = sunTransitsFor(date, latDeg, lonDeg);
+  if (tr.sunriseJD == null) return null;
+  return { sunriseJD: tr.sunriseJD, sunsetJD: tr.sunsetJD };
+}
+
+// Weekday (0=Sun) of a sunrise JD, dated in local mean solar time.
+function weekdayOfSunrise(sunriseJD, lonDeg) {
+  return new Date((sunriseJD - 2440587.5) * 86400000 + lonDeg * 240000).getUTCDay();
 }
 
 function sidWeekday(birth) {
@@ -182,21 +182,18 @@ export function computeUpagrahas(birth, options = {}) {
   // birth's local day. For night-arc that started LAST evening, classical
   // texts still tag the night with the weekday of the day that preceded
   // it — i.e., the weekday at sunrise of that day.
+  // The weekday is that of the sunrise opening the current day (the vāra
+  // runs sunrise → sunrise), dated in local solar time so it cannot slip a
+  // day when the civil date and the UT date differ.
   let weekday;
-  if (isDay) {
-    weekday = sidWeekday(birth);
-  } else if (jdBirth >= today.sunsetJD) {
-    weekday = sidWeekday(birth);                                           // tonight
+  if (isDay || jdBirth >= today.sunsetJD) {
+    weekday = weekdayOfSunrise(today.sunriseJD, birth.lonDeg);              // today / tonight
   } else {
     // Pre-sunrise: night-arc began at yesterday's sunset. Tag with yesterday's vāra.
-    const yLocal = new Date(utc.getTime() + (birth.tzOffsetMin || 0) * 60000 - 86400000);
-    weekday = yLocal.getUTCDay();
+    weekday = (weekdayOfSunrise(today.sunriseJD, birth.lonDeg) + 6) % 7;
   }
 
-  const dayPart = GULIKA_DAY_PART[weekday];
-  const partNumber = isDay
-    ? dayPart
-    : (((dayPart - 5) % 8) + 8) % 8 + 1;       // night = (day-rule - 4) mod 8
+  const partNumber = isDay ? GULIKA_DAY_PART[weekday] : GULIKA_NIGHT_PART[weekday];
 
   // Gulika kāla part bounds (1-indexed → 0-indexed offset).
   const partStartJD = baseJD + (partNumber - 1) * partLen;

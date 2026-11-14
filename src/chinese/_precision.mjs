@@ -220,6 +220,40 @@ section('10. Range-edge births compute via Meeus Sun (no blank chart)');
   ok(hi?.luck?.pillars?.length > 0, '2399-12-20 forward luck pillars resolve (was null before)');
 }
 
+// --- 11. Late-Zi hour (23:00-23:59): hour stem from the NEXT day (audit a) ---
+section('11. Late-Zi hour stem uses the next day stem; day pillar stays on the civil date');
+{
+  const { fourPillars } = await import('./compute/pillars.js');
+  const gzs = (p) => (p?.stem?.hanzi ?? '') + (p?.branch?.hanzi ?? '');
+  // 1984-02-04 is a 戊 day, 1984-02-05 a 己 day. Both schools (late-Zi and Zi-advance)
+  // derive the 23:xx hour stem from the NEXT day's stem: 己 → 甲子.
+  const P = fourPillars({ year: 1984, month: 2, day: 4, hour: 23, minute: 30, tzOffsetMin: 480 });
+  const today = dayPillar(1984, 2, 4);
+  const next  = dayPillar(1984, 2, 5);
+  eq(gzs(P?.day), today.stem.hanzi + today.branch.hanzi, '1984-02-04 23:30 day pillar = civil date (midnight convention)');
+  eq(gzs(P?.hour), '甲子', '1984-02-04 23:30 hour pillar = 甲子 (Five Rats from next day stem ' + next.stem.hanzi + ')');
+  const Q = fourPillars({ year: 1984, month: 2, day: 4, hour: 22, minute: 59, tzOffsetMin: 480 });
+  eq(gzs(Q?.hour), '癸亥', '1984-02-04 22:59 hour pillar = 癸亥 (still current day stem 戊)');
+  const R = fourPillars({ year: 1984, month: 2, day: 5, hour: 0, minute: 30, tzOffsetMin: 480 });
+  eq(gzs(R?.hour), '甲子', '1984-02-05 00:30 hour pillar = 甲子 (same zi hour as 23:30 the night before)');
+}
+
+// --- 12. Luck pillar dates use civil (tropical) years (audit g) ---
+section('12. Luck-pillar dates: 3 days = 1 year of age, counted in tropical years');
+{
+  const { computeBaziChart } = await import('./compute/chart.js');
+  const c = computeBaziChart({ name: 'g', year: 1984, month: 2, day: 4, hour: 23, minute: 30, tzOffsetMin: 480, latDeg: 39.9, lonDeg: 116.4 }, { gender: 'male' });
+  const lp = c?.luck?.pillars || [];
+  const birthMs = c?.pillars?.utc?.getTime();
+  const TROP = 365.2422 * 86400000;
+  ok(lp.length >= 9, 'luck pillars present');
+  // The 9th pillar starts at startAge + 80 years; a sidereal year would put
+  // it ~0.9 days late (80 × 0.0142 d), compounding to ~1.4 days by age 100.
+  const p9 = lp[8];
+  ok(p9 && Math.abs(p9.startDate.getTime() - (birthMs + p9.startAge * TROP)) < 60000,
+     `9th luck pillar starts at birth + startAge × 365.2422 d (off by ${p9 ? ((p9.startDate.getTime() - (birthMs + p9.startAge * TROP)) / 3.6e6).toFixed(2) : '?'} h)`);
+}
+
 // --- Summary ---
 console.log(`\n──────────────────────────────────────────────────`);
 console.log(`  ${PASS} passed · ${FAIL} failed`);

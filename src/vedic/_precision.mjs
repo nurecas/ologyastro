@@ -688,6 +688,119 @@ section('10. Panchang — Tithi from Sun-Moon difference');
   eq(p5.tithi.name, 'Amavasya', 'Amavasya before reset');
 }
 
+// --- 12. Dignity precedence — BPHS exaltation / mooltrikona / own (audit c) ---
+section('12. Dignity precedence (BPHS ch. 3): exaltation, mooltrikona, own sign');
+{
+  const { dignityOf } = await import('./compute/chart.js');
+  const S = (sign, deg) => sign * 30 + deg;
+  const cases = [
+    // Mercury in Virgo: uccha to 15°, mooltrikona 15-20°, own 20-30°.
+    ['Mercury', S(5, 10),   'exalted'],
+    ['Mercury', S(5, 17),   'mooltrikona'],
+    ['Mercury', S(5, 25),   'own'],
+    ['Mercury', S(2, 10),   'own'],          // Gemini
+    // Moon in Taurus: uccha to 3°, mooltrikona the rest.
+    ['Moon',    S(1, 2),    'exalted'],
+    ['Moon',    S(1, 10),   'mooltrikona'],
+    ['Moon',    S(3, 10),   'own'],          // Cancer
+    // Sun: Leo mooltrikona 0-20°, own 20-30°; exalted Aries.
+    ['Sun',     S(4, 10),   'mooltrikona'],
+    ['Sun',     S(4, 25),   'own'],
+    ['Sun',     S(0, 25),   'exalted'],
+    // Mars: Aries MT 0-12°, own 12-30°; Scorpio own; Capricorn exalted.
+    ['Mars',    S(0, 5),    'mooltrikona'],
+    ['Mars',    S(0, 20),   'own'],
+    ['Mars',    S(7, 5),    'own'],
+    ['Mars',    S(9, 5),    'exalted'],
+    // Jupiter: Sagittarius MT 0-10°, own 10-30°; Pisces own; Cancer exalted.
+    ['Jupiter', S(8, 5),    'mooltrikona'],
+    ['Jupiter', S(8, 15),   'own'],
+    ['Jupiter', S(3, 25),   'exalted'],
+    // Venus: Libra MT 0-15°, own 15-30°; Taurus own; Pisces exalted.
+    ['Venus',   S(6, 5),    'mooltrikona'],
+    ['Venus',   S(6, 20),   'own'],
+    ['Venus',   S(1, 5),    'own'],
+    ['Venus',   S(11, 5),   'exalted'],
+    // Saturn: Aquarius MT 0-20°, own 20-30°; Capricorn own; Libra exalted.
+    ['Saturn',  S(10, 5),   'mooltrikona'],
+    ['Saturn',  S(10, 25),  'own'],
+    ['Saturn',  S(9, 5),    'own'],
+    ['Saturn',  S(6, 5),    'exalted'],
+    // Debilitation still whole-sign.
+    ['Mercury', S(11, 20),  'debilitated'],
+    ['Moon',    S(7, 20),   'debilitated'],
+  ];
+  for (const [pl, lon, want] of cases) eq(dignityOf(pl, lon), want, `${pl} at ${RASHIS[Math.floor(lon / 30)].en} ${(lon % 30).toFixed(0)}° → ${want}`);
+}
+
+// --- 13. Vara runs sunrise to sunrise (audit b) — needs Swiss ---------------
+section('13. Vara (weekday) changes at local sunrise, not at midnight');
+{
+  const { initSwiss } = await import('../astro/ephemeris.js');
+  const { computeVedicChart } = await import('./compute/chart.js');
+  await initSwiss();
+  const delhi = { year: 1990, month: 6, day: 21, minute: 0, tzOffsetMin: 330, latDeg: 28.6139, lonDeg: 77.2090 };
+  // 1990-06-21 was a Thursday; Delhi sunrise that day ≈ 05:24 IST.
+  const pre  = computeVedicChart({ ...delhi, hour: 4 });
+  eq(pre?.panchang?.vara, 'Wednesday', 'Delhi 1990-06-21 04:00 IST (before sunrise) is still Wednesday');
+  const post = computeVedicChart({ ...delhi, hour: 6 });
+  eq(post?.panchang?.vara, 'Thursday', 'Delhi 1990-06-21 06:00 IST (after sunrise) is Thursday');
+  const eve  = computeVedicChart({ ...delhi, hour: 23 });
+  eq(eve?.panchang?.vara, 'Thursday', 'Delhi 1990-06-21 23:00 IST is still Thursday (until next sunrise)');
+}
+
+// --- 14. Gulika = Saturn's eighth of the day / night (BPHS 3.66-68) --------
+section('14. Upagrahas — Gulika part is the Saturn-ruled eighth; weekday from sunrise');
+{
+  const { computeUpagrahas } = await import('./compute/upagrahas.js');
+  const delhi = { minute: 0, tzOffsetMin: 330, latDeg: 28.6139, lonDeg: 77.2090 };
+  // Day parts are ruled from the weekday lord in weekday order, 8th lordless:
+  // Saturn's part = Sun 7, Mon 6, Tue 5, Wed 4, Thu 3, Fri 2, Sat 1.
+  // Night parts start from the 5th lord from the weekday lord:
+  // Saturn's part = Sun 3, Mon 2, Tue 1, Wed 7, Thu 6, Fri 5, Sat 4.
+  const thuDay = computeUpagrahas({ ...delhi, year: 1990, month: 6, day: 21, hour: 10 });
+  eq(thuDay?.weekday, 4, 'Delhi 1990-06-21 10:00 IST → Thursday');
+  eq(thuDay?.isDayBirth, true, '… day birth');
+  eq(thuDay?.partNumber, 3, '… Gulika = 3rd day part (Saturn) on Thursday');
+  // Saturn's day part starts at sunrise + 2/8 of daylight. Sunrise 05:23:46 IST,
+  // sunset 19:21:50 IST (Astronomy Engine) → part 3 starts 08:53:17 IST = 03:23:17Z.
+  const st = thuDay?.partRange?.startDate;
+  ok(st && Math.abs(st.getTime() - Date.parse('1990-06-21T03:23:17Z')) < 90000, `… Thursday part 3 starts ≈ 03:23:17Z (got ${st && st.toISOString()})`);
+  const wedNight = computeUpagrahas({ ...delhi, year: 1990, month: 6, day: 21, hour: 4 });
+  eq(wedNight?.weekday, 3, 'Delhi 1990-06-21 04:00 IST (pre-dawn) → Wednesday night');
+  eq(wedNight?.isDayBirth, false, '… night birth');
+  eq(wedNight?.partNumber, 7, '… Gulika = 7th night part (Saturn) on Wednesday night');
+  const sunNight = computeUpagrahas({ ...delhi, year: 2026, month: 11, day: 15, hour: 21 });
+  eq(sunNight?.weekday, 0, 'Delhi 2026-11-15 21:00 IST → Sunday');
+  eq(sunNight?.partNumber, 3, '… Gulika = 3rd night part (Saturn) on Sunday night');
+  const satDay = computeUpagrahas({ ...delhi, year: 2026, month: 11, day: 14, hour: 7 });
+  eq(satDay?.partNumber, 1, 'Saturday day → Gulika = 1st part');
+}
+
+// --- 15. Sade Sati / Ashtama window boundaries refined to the day ---------
+section('15. Sade Sati window start/end = Saturn sidereal ingress (±2 days)');
+{
+  const { computeVedicChart } = await import('./compute/chart.js');
+  const { computeSaturnPeriods } = await import('./compute/sadeSati.js');
+  // Moon in Aquarius (sidereal 309.5°). Saturn (Lahiri) entered Capricorn on
+  // 2020-01-24 and leaves Pisces for Aries on 2028-02-23 (independent
+  // Astronomy-Engine bisection; matches published transit dates).
+  const c = computeVedicChart({ year: 1990, month: 1, day: 1, hour: 12, minute: 0, tzOffsetMin: 0, latDeg: 28.6, lonDeg: 77.2 });
+  const P = computeSaturnPeriods(c, { now: new Date('2026-01-01') });
+  const w = P?.sadeSati?.find(x => x.start.getUTCFullYear() === 2020);
+  const days = (a, iso) => Math.abs(a.getTime() - Date.parse(iso)) / 86400000;
+  ok(w && days(w.start, '2020-01-24T05:27Z') <= 2, `Sade Sati starts 2020-01-24 (got ${w && w.start.toISOString().slice(0, 10)})`);
+  ok(w && days(w.end, '2028-02-23T13:23Z') <= 2, `Sade Sati ends 2028-02-23 (got ${w && w.end.toISOString().slice(0, 10)})`);
+  const prev = P?.sadeSati?.find(x => x.start.getUTCFullYear() === 1990);
+  ok(prev && days(prev.start, '1990-03-20T19:22Z') <= 2, `previous Sade Sati starts 1990-03-20 (got ${prev && prev.start.toISOString().slice(0, 10)})`);
+  // Moon in Sagittarius: Saturn leaves Capricorn 1993-03-05 but retrogrades
+  // back in for 25 days (1993-10-15 → 11-09); the window ends at the final exit.
+  const c2 = computeVedicChart({ year: 1966, month: 4, day: 10, hour: 12, minute: 0, tzOffsetMin: 0, latDeg: 20, lonDeg: 0 });
+  const P2 = computeSaturnPeriods(c2, { now: new Date('2026-01-01') });
+  const w2 = P2?.sadeSati?.find(x => x.start.getUTCFullYear() === 1984);
+  ok(w2 && days(w2.end, '1993-11-09T00:00Z') <= 2, `Sade Sati 1984-93 ends at the final egress 1993-11-09 (got ${w2 && w2.end.toISOString().slice(0, 10)})`);
+}
+
 // --- SUMMARY --------------------------------------------------------------
 
 console.log(`\n──────────────────────────────────────────────────`);

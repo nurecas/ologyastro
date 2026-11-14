@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePersonal, profileKey } from '../store.js';
-import { searchLocation, offsetMinutesForZoneAt } from '../astro/geocode.js';
+import { searchLocation, offsetMinutesForZoneAt, offsetMinutesForWallClock } from '../astro/geocode.js';
 import SystemNav from '../../shared/shell/SystemNav.jsx';
 
 function tzLabel(min) {
@@ -164,7 +164,8 @@ export default function BirthForm() {
     const birthDate = form.date
       ? new Date(form.date + 'T' + (form.time || '12:00') + ':00Z')
       : new Date();
-    const tz = offsetMinutesForZoneAt(loc.timezone, birthDate);
+    // birthDate is the local wall clock read as UTC: sample the offset at the real instant.
+    const tz = form.date ? offsetMinutesForWallClock(loc.timezone, birthDate) : offsetMinutesForZoneAt(loc.timezone, birthDate);
     setForm((f) => ({
       ...f,
       latMag: Math.abs(loc.latitude).toFixed(4),

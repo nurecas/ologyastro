@@ -31,11 +31,10 @@ const KARANA_NAMES = [
 ];
 const FIXED_KARANAS = ['Shakuni','Chatushpada','Naga','Kimstughna'];
 
-// Vara = weekday. Vedic vara strictly starts at sunrise, but the standard
-// modern simplification is to use the LOCAL calendar day. Caller must
-// pass `localDate` already shifted by the tz offset — using UT here would
-// be wrong for any birth in the pre-sunrise UT window (e.g. a 2 AM IST
-// birth = 8:30 PM UT of the previous day → wrong vara by one day).
+// Vara = weekday. The Jyotish day runs from local SUNRISE to the next
+// sunrise, so a 04:00 birth belongs to the previous weekday. The caller
+// passes a date whose getUTCDay() is already the vara weekday (chart.js
+// derives it from the most recent sunrise; see varaWeekdayDate).
 const VARA = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 function norm360(x) { let y = x % 360; if (y < 0) y += 360; return y; }
@@ -87,8 +86,8 @@ function karanaAt(sunLon, moonLon) {
   return { index: pos, name };
 }
 
-// `localDate`: the birth moment shifted by the tzOffset so vara reflects
-// the user's actual calendar day. Tithi / Yoga / Karana don't depend on
+// `localDate`: a date whose UTC weekday is the vara (sunrise-to-sunrise
+// weekday) of the birth. Tithi / Yoga / Karana don't depend on
 // this — they're computed directly from the sidereal Sun and Moon at the
 // exact birth moment.
 export function computePanchang(sunLonSidereal, moonLonSidereal, localDate) {

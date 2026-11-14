@@ -51,6 +51,55 @@ for (const e of EQUIVALENT_CORPUS) {
 }
 ok(mismatches === 0, `all ${EQUIVALENT_CORPUS.length} corpus entries match their computed value`);
 
+section('Date numerology conventions (audit d)');
+{
+  const { lifePath, personalYear, pinnacles } = await import('./compute/numberMeanings.js');
+  // Life path keeps masters: 2000-01-08 → 1 + 8 + 2 = 11.
+  ok(lifePath(2000, 1, 8).final === 11, 'life path 2000-01-08 = 11');
+  // First pinnacle ends at 36 − (life path reduced to one digit): 11 → 2 → 34.
+  const p = pinnacles(2000, 1, 8);
+  ok(p[0].period === 'Birth — age 34', `LP 11 first pinnacle ends at 34 (got "${p[0].period}")`);
+  ok(p[1].period === 'Age 35 — 43', `LP 11 second pinnacle 35-43 (got "${p[1].period}")`);
+  // Pinnacles reduce month/day/year to single digits first; 11 and 22 survive
+  // only in the resulting pinnacle. 1975-11-22: M 2, D 4, Y 4.
+  const q = pinnacles(1975, 11, 22).map(x => x.value);
+  ok(JSON.stringify(q) === JSON.stringify([6, 8, 5, 6]), `pinnacles 1975-11-22 = [6,8,5,6] (got ${JSON.stringify(q)})`);
+  const r = pinnacles(1975, 11, 22);
+  ok(r[0].period === 'Birth — age 35', `1975-11-22 (LP 55→1) first pinnacle ends 35 (got "${r[0].period}")`);
+  // A master pinnacle is still possible: 1990-02-09 → P1 = 2 + 9 = 11.
+  ok(pinnacles(1990, 2, 9)[0].value === 11, 'pinnacle sum 11 is kept as a master');
+  // Personal year: single-digit components, result 1-9 with 11/22 kept, never 33.
+  const py = personalYear(11, 11, 2009);
+  ok(py.final === 6, `personal year 11/11 in 2009 = 2+2+2 = 6, not 33 (got ${py.final})`);
+  ok(personalYear(1, 1, 2025).final === 11, 'personal year 1 + 1 + 9 = 11 is kept as a master');
+  ok(personalYear(2, 9, 2024).final === 1, 'personal year 2 + 9 + 8 = 19 → 1');
+}
+
+section('Date numerology reference date is an explicit local date (audit e)');
+{
+  const { localDateISO, referenceYear } = await import('./compute/numberMeanings.js');
+  // 23:30 local on 31 Dec is still the old year whatever the device zone.
+  ok(localDateISO(new Date(2026, 11, 31, 23, 30)) === '2026-12-31', 'localDateISO uses the local calendar date');
+  ok(localDateISO(new Date(2027, 0, 1, 0, 15)) === '2027-01-01', 'localDateISO just after local midnight');
+  ok(referenceYear('2031-05-01') === 2031, 'an explicit reference date selects another year');
+  ok(typeof referenceYear() === 'number', 'default reference year is today (local)');
+}
+
+section('Letter variants that must not score 0');
+{
+  const { computeArabic } = await import('./compute/calculate.js');
+  const abjad = (w) => computeArabic(w)[0].value;
+  // Persian/Urdu keyboards type yeh as U+06CC and kaf as U+06A9.
+  ok(abjad('علي') === 110, 'Arabic علي (Arabic yeh) = 110');
+  ok(abjad('علی') === 110, `Persian-keyboard علی (U+06CC yeh) = 110 (got ${abjad('علی')})`);
+  ok(abjad('کتاب') === abjad('كتاب'), `کتاب with U+06A9 kaf = كتاب (got ${abjad('کتاب')} vs ${abjad('كتاب')})`);
+  ok(abjad('ٱلله') === abjad('الله'), 'alif wasla ٱ scores as alif');
+  // Greek: digamma (= stigma, 6), archaic koppa (90), lunate sigma (200).
+  ok(valOf(computeGreek('ϝ'), 'Isopsephy') === 6, 'digamma ϝ = 6');
+  ok(valOf(computeGreek('ϙ'), 'Isopsephy') === 90, 'archaic koppa ϙ = 90');
+  ok(valOf(computeGreek('ϲ'), 'Isopsephy') === 200 && valOf(computeGreek('Ϲ'), 'Isopsephy') === 200, 'lunate sigma ϲ Ϲ = 200');
+}
+
 console.log(`\n──────────────────────────────────────`);
 console.log(`  ${PASS} passed · ${FAIL} failed`);
 if (FAIL) for (const m of FAILS) console.log('  ✗', m);

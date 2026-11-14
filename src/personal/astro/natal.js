@@ -191,15 +191,18 @@ export function computeNatal(birth, options = {}) {
   }
 
   // Part of Fortune (brief Phase 3). Classical day/night formulas:
-  //   Day (Sun above horizon, houses 7-12):  PF = ASC + Moon \u2212 Sun
-  //   Night (Sun below horizon, houses 1-6): PF = ASC + Sun  \u2212 Moon
+  //   Day (Sun above horizon):   PF = ASC + Moon \u2212 Sun
+  //   Night (Sun below horizon): PF = ASC + Sun  \u2212 Moon
   // Amplitude 0.2 (calculated point, per brief). Visible in Basic + Advanced.
+  // Sect: the Sun is above the horizon exactly when its ecliptic longitude
+  // lies on the DSC → MC → ASC half of the ecliptic (the Sun has ~0 latitude).
+  // Testing "houses 7-12" is only equivalent for quadrant systems; in
+  // whole-sign (and near the horizon) it misreads the sect.
   const sunPlanet  = planets.find(p => p.name === 'Sun');
   const moonPlanet = planets.find(p => p.name === 'Moon');
-  const sunHouse   = sunPlanet?.house ?? 1;
-  const isDay      = sunHouse >= 7 && sunHouse <= 12;
   const ascDeg     = ascRad * RAD;
   const sunDeg     = sunPlanet?.lonDeg ?? 0;
+  const isDay      = norm360(sunDeg - ascDeg) >= 180;
   const moonDeg    = moonPlanet?.lonDeg ?? 0;
   const fortuneDeg = isDay
     ? norm360(ascDeg + moonDeg - sunDeg)

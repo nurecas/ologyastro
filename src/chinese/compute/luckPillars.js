@@ -61,8 +61,8 @@ export function luckStartingAge(birthUTC, direction) {
 // `gender`:  'male' | 'female'.
 // `count`:   how many luck pillars to compute (default 10 → 100 years of
 //            life coverage).
-const MS_YEAR = 365.25636 * 86400000;   // sidereal year for date math
-                                         // (matches Vimshottari for consistency)
+const MS_YEAR = 365.2422 * 86400000;    // tropical (civil) year: ages are counted
+                                         // in ordinary calendar years (3 days = 1 year)
 
 export function luckPillars(pillars, birth, gender, count = 10) {
   if (!pillars || !birth) return null;

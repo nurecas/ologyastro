@@ -8,8 +8,8 @@
 // Ashtama Shani (Saturn in 4th from Moon) — each ~2.5 years, mini
 // versions of Sade Sati read as periods of testing.
 //
-// Algorithm: scan Saturn's sidereal sign monthly across the full lifetime
-// window. Group consecutive months in the relevant sign(s) into periods;
+// Algorithm: scan Saturn's sidereal sign weekly across the full lifetime
+// window. Group consecutive samples in the relevant sign(s) into periods;
 // merge gaps shorter than ~1 year (retrograde dips). Then refine each
 // period boundary to ±1 day by re-scanning daily across the ±1 month
 // neighbourhood of the monthly transition — this gives ≤24 h precision on
@@ -19,7 +19,10 @@
 import { longitudesAtDate } from '../../astro/ephemeris.js';
 import { RASHIS } from './data.js';
 
-const MS_MONTH = 30 * 86400000;
+// Coarse sampling step. Weekly, not monthly: a retrograde re-entry into a
+// sign can last under a month (e.g. Saturn back in Capricorn 1993-10-15 →
+// 11-09), which a 30-day step skips, ending the window months early.
+const MS_STEP  = 7 * 86400000;
 const MS_DAY   = 86400000;
 
 function signOf(lon) {
@@ -27,7 +30,7 @@ function signOf(lon) {
   return Math.floor(x / 30);
 }
 
-// Sample Saturn's sidereal sign monthly across [from, to]. Returns array
+// Sample Saturn's sidereal sign weekly across [from, to]. Returns array
 // of { date, signIdx }.
 function sampleSaturn(from, to) {
   const out = [];
@@ -37,7 +40,7 @@ function sampleSaturn(from, to) {
     const d = new Date(t);
     const lon = longitudesAtDate(d).Saturn;
     out.push({ date: d, signIdx: signOf(lon) });
-    t += MS_MONTH;
+    t += MS_STEP;
   }
   return out;
 }
@@ -163,9 +166,19 @@ export function computeSaturnPeriods(chart, options = {}) {
 
   const samples = sampleSaturn(from, to);
 
-  const sadeSati = groupBySign(samples, s => sadeSatiSigns.has(s));
-  const ashtama  = groupBySign(samples, s => s === ashtamaSign);
-  const ardha    = groupBySign(samples, s => s === ardhaSign);
+  // groupBySign works at monthly resolution (first/last sample INSIDE the
+  // window), so refine each window's outer boundaries to the actual daily
+  // ingress / egress — otherwise start is up to 30 days late and end up to
+  // 30 days early.
+  const signAt = (date) => samples.find(x => x.date.getTime() === date.getTime())?.signIdx;
+  const refine = (periods) => periods.map(p => ({
+    ...p,
+    start: refineSignEntry(p.start, signAt(p.start)),
+    end:   refineSignExit(p.end, signAt(p.end)),
+  }));
+  const sadeSati = refine(groupBySign(samples, s => sadeSatiSigns.has(s)));
+  const ashtama  = refine(groupBySign(samples, s => s === ashtamaSign));
+  const ardha    = refine(groupBySign(samples, s => s === ardhaSign));
 
   const sadeSatiPeriods = sadeSati.map(p => ({
     start: p.start,

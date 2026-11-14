@@ -110,6 +110,11 @@ GREEK.letters.forEach(([l, n, s, o]) => {
   GRK_NAME[l.toLowerCase()] = n;
 });
 GRK_STD['Σ'] = 200; GRK_ORD['Σ'] = 20;
+// Variant letter forms that otherwise score 0: digamma (the older form of
+// the episemon 6), archaic koppa (90) and lunate sigma (200).
+for (const [ch, base] of [['ϝ','ϛ'],['Ϝ','ϛ'],['ϙ','ϟ'],['Ϙ','ϟ'],['ϲ','σ'],['Ϲ','σ']]) {
+  GRK_STD[ch] = GRK_STD[base]; GRK_ORD[ch] = GRK_ORD[base];
+}
 
 /* ----- ARABIC ----- */
 export const ARABIC = {
@@ -148,6 +153,10 @@ export const ARB_STD = {}, ARB_NAME = {};
 ARABIC.letters.forEach(([l, n, v]) => { ARB_STD[l] = v; ARB_NAME[l] = n; });
 ARB_STD['أ'] = 1; ARB_STD['إ'] = 1; ARB_STD['آ'] = 1; ARB_STD['ء'] = 1;
 ARB_STD['ة'] = 5; ARB_STD['ى'] = 10; ARB_STD['ؤ'] = 6; ARB_STD['ئ'] = 10;
+// Persian / Urdu code points for the same letters (typed by Persian and Urdu
+// keyboards and common in pasted text): yeh U+06CC, keheh U+06A9, yeh barree
+// U+06D2, heh goal U+06C1, heh doachashmee U+06BE, alif wasla U+0671.
+ARB_STD['ی'] = 10; ARB_STD['ک'] = 20; ARB_STD['ے'] = 10; ARB_STD['ہ'] = 5; ARB_STD['ھ'] = 5; ARB_STD['ٱ'] = 1;
 
 /* ----- ENGLISH ----- */
 export const ENG_ORDINAL     = {};
@@ -181,7 +190,7 @@ export const VOWELS_ENGLISH    = new Set(['A','E','I','O','U']);
 export const VOWELS_ENGLISH_Y  = new Set(['A','E','I','O','U','Y']);
 export const VOWELS_HEBREW     = new Set(['א','ה','ו','י']);
 export const VOWELS_GREEK      = new Set(['α','ε','η','ι','ο','υ','ω','Α','Ε','Η','Ι','Ο','Υ','Ω']);
-export const VOWELS_ARABIC     = new Set(['ا','و','ي','ى','أ','إ','آ']);
+export const VOWELS_ARABIC     = new Set(['ا','و','ي','ى','أ','إ','آ','ی','ٱ']);
 
 export function getVowelSet(lang, includeY) {
   if (lang === 'english') return includeY ? VOWELS_ENGLISH_Y : VOWELS_ENGLISH;

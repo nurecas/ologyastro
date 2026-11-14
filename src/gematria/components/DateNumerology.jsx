@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { useGematria } from '../store.js';
 import {
   lifePath, birthdayNum, personalYear, universalYear, pinnacles, challenges,
-  digitSum, NUMBER_MEANINGS,
+  digitSum, NUMBER_MEANINGS, localDateISO, referenceYear,
 } from '../compute/numberMeanings.js';
 
 function birthToISO(b) {
@@ -14,7 +14,11 @@ function birthToISO(b) {
   return `${b.year}-${String(b.month).padStart(2, '0')}-${String(b.day).padStart(2, '0')}`;
 }
 
-export default function DateNumerology() {
+// The reference date for the Personal / Universal Year is an explicit LOCAL
+// calendar date (YYYY-MM-DD). It defaults to today's date on the viewer's
+// local calendar; pass `referenceDate` to read any other year. Numerology
+// years run on the calendar year (Jan 1 → Dec 31) in this convention.
+export default function DateNumerology({ referenceDate } = {}) {
   const birth = useGematria(s => s.birth);
   const seedFromBirth = birthToISO(birth);
   const [date, setDate] = useState(seedFromBirth);
@@ -47,7 +51,7 @@ export default function DateNumerology() {
 
   const lp   = lifePath(yyyy, mm, dd);
   const bday = birthdayNum(dd);
-  const calY = new Date().getFullYear();
+  const calY = referenceYear(referenceDate || localDateISO());
   const pY   = personalYear(mm, dd, calY);
   const uY   = universalYear(calY);
   const pins = pinnacles(yyyy, mm, dd);
@@ -91,7 +95,7 @@ export default function DateNumerology() {
         <DateCard
           name={`Personal Year ${calY}`}
           value={pY.final}
-          steps={`M ${digitSum(mm)} + D ${digitSum(dd)} + Y ${digitSum(calY)} = ${pY.total} → ${pY.final}`}
+          steps={`M ${pY.m} + D ${pY.d} + Y ${pY.y} = ${pY.total} → ${pY.final}`}
           meaning={NUMBER_MEANINGS[pY.final]}
           master={[11,22,33].includes(pY.final)}
         />
